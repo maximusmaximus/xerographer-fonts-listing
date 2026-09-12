@@ -1,4 +1,4 @@
-import { LICENSE_USD } from "./constants.ts";
+import { CATALOG_LICENSE_USD, LICENSE_USD, usdLabel } from "./constants.ts";
 import { categoryTree, getFont, queryFonts, STATS, withSources } from "./fonts.ts";
 import { corsHeaders } from "./x402.ts";
 
@@ -79,12 +79,23 @@ export function toolList() {
       },
       {
         name: "purchase_commercial_license",
-        description: `Pay US$${LICENSE_USD} USDC via x402 for an Unlimited Commercial Use license, per font per agent. Optional email receives the PDF receipt; maxinfeld@gmail.com is always copied. Requires PAYMENT-SIGNATURE on the HTTP request.`,
+        description: `Pay ${usdLabel(LICENSE_USD)} USDC via x402 for an Unlimited Commercial Use license, per font per agent. Font files may not be resold or redistributed; typefaces may not be edited without written permission. Optional email receives the PDF receipt; maxinfeld@gmail.com is always copied. Requires PAYMENT-SIGNATURE on the HTTP request.`,
         inputSchema: {
           type: "object",
           required: ["slug"],
           properties: {
             slug: { type: "string", description: "Font slug, e.g. crackvetica" },
+            email: { type: "string", description: "Optional email for the PDF receipt" },
+            licenseeName: { type: "string", description: "Optional display name for the licensee" },
+          },
+        },
+      },
+      {
+        name: "purchase_catalog_license",
+        description: `Pay ${usdLabel(CATALOG_LICENSE_USD)} USDC via x402 for Unlimited Commercial Use of the entire catalog (1,376 faces) for a single agent. Font files may not be resold or redistributed; typefaces may not be edited without written permission. Optional email receives the PDF receipt; maxinfeld@gmail.com is always copied. Requires PAYMENT-SIGNATURE.`,
+        inputSchema: {
+          type: "object",
+          properties: {
             email: { type: "string", description: "Optional email for the PDF receipt" },
             licenseeName: { type: "string", description: "Optional display name for the licensee" },
           },
@@ -161,6 +172,15 @@ async function callTool(name: string, args: Json, request: Request, origin: stri
         origin,
       });
     }
+    case "purchase_catalog_license": {
+      const { purchaseLicense } = await import("./license.ts");
+      return purchaseLicense(request, {
+        catalog: true,
+        email: str(args.email),
+        licenseeName: str(args.licenseeName),
+        origin,
+      });
+    }
     case "get_license": {
       const id = str(args.id) ?? "";
       const { getLicenseById } = await import("./license.ts");
@@ -186,7 +206,7 @@ export async function handleMcp(request: Request, origin: string): Promise<Respo
         name: "xerographer-fonts",
         title: "Xerographer Fonts",
         instructions:
-          "Browse 1,376 Xerographer typefaces, preview custom text, and purchase Unlimited Commercial Use licenses for US$45 USDC via x402 (PAYMENT-SIGNATURE). Optional email on purchase; maxinfeld@gmail.com is always copied.",
+          `Browse 1,376 Xerographer typefaces, preview custom text, and purchase Unlimited Commercial Use licenses via x402 (PAYMENT-SIGNATURE): ${usdLabel(LICENSE_USD)} per font per agent, or ${usdLabel(CATALOG_LICENSE_USD)} for the entire catalog for one agent. Font files may not be resold; typefaces may not be edited without permission. Optional email on purchase; maxinfeld@gmail.com is always copied.`,
         capabilities: { tools: {}, resources: {} },
       },
       { headers: corsHeaders() },
@@ -209,7 +229,7 @@ export async function handleMcp(request: Request, origin: string): Promise<Respo
           capabilities: { tools: {}, resources: {} },
           serverInfo: { name: "xerographer-fonts", version: "1.0.0" },
           instructions:
-            "Use list_fonts / get_font to explore. purchase_commercial_license is x402-gated at US$45 USDC per font per agent.",
+            `Use list_fonts / get_font to explore. purchase_commercial_license is x402-gated at ${usdLabel(LICENSE_USD)} USDC per font per agent. purchase_catalog_license is ${usdLabel(CATALOG_LICENSE_USD)} USDC for every face, one agent. Font files may not be resold or edited without permission.`,
         }),
       );
     }

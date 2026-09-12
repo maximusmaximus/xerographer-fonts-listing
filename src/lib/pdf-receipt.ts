@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { LICENSE_TERMS } from "./constants.ts";
 import type { LicenseGrant, X402Receipt } from "./x402";
 
 export type ReceiptPdfInput = {
@@ -10,7 +11,6 @@ export type ReceiptPdfInput = {
 
 export async function buildLicensePdf(input: ReceiptPdfInput): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const page = doc.addPage([612, 792]);
   const serif = await doc.embedFont(StandardFonts.TimesRoman);
   const serifBold = await doc.embedFont(StandardFonts.TimesRomanBold);
   const mono = await doc.embedFont(StandardFonts.Courier);
@@ -18,16 +18,17 @@ export async function buildLicensePdf(input: ReceiptPdfInput): Promise<Uint8Arra
   const muted = rgb(0.38, 0.36, 0.33);
   const rule = rgb(0.78, 0.75, 0.7);
 
+  const page = doc.addPage([612, 792]);
   const draw = (text: string, x: number, y: number, size: number, font = serif) => {
     page.drawText(text, { x, y, size, font, color: ink });
   };
 
+  const catalog = input.grant.scope === "catalog" || input.grant.fontSlug === "catalog";
   draw("XEROGRAPHER FONTS", 56, 730, 11, serifBold);
-  draw("Unlimited Commercial Use License", 56, 708, 22, serifBold);
+  draw(catalog ? "Catalog Unlimited Commercial Use" : "Unlimited Commercial Use License", 56, 708, 18, serifBold);
   page.drawLine({ start: { x: 56, y: 694 }, end: { x: 556, y: 694 }, thickness: 0.6, color: rule });
 
-  const grant =
-    "This receipt certifies that the licensee named below is granted unlimited commercial use of the listed typeface. The licensee may use, embed, and distribute the font in commercial work without further royalty to the licensor. Personal and donationware use remains available from the source links below. This grant is per licensee (human or agent) and per typeface.";
+  const grant = input.grant.permission;
   wrapText(grant, 78).forEach((line, i) => draw(line, 56, 662 - i * 14, 11));
 
   const rows: [string, string][] = [
@@ -35,10 +36,10 @@ export async function buildLicensePdf(input: ReceiptPdfInput): Promise<Uint8Arra
     ["Issued", input.issuedAt],
     ["Typeface", input.grant.fontName],
     ["Slug", input.grant.fontSlug],
+    ["Scope", catalog ? "Entire catalog, one agent" : "Single typeface, one agent"],
     ["Licensee", input.grant.licensee],
     ["Email", input.grant.email ?? "—"],
-    ["Permission", input.grant.permission],
-    ["Price", `US$${input.grant.priceUsd} USDC`],
+    ["Price", `US$${input.grant.priceUsd.toLocaleString("en-US")} USDC`],
     ["Network", input.receipt.network],
     ["Transaction", input.receipt.transaction],
     ["DaFont", input.grant.sources.dafont],
@@ -46,7 +47,7 @@ export async function buildLicensePdf(input: ReceiptPdfInput): Promise<Uint8Arra
     ["Designer", input.grant.sources.designer],
   ];
 
-  let y = 520;
+  let y = 500;
   for (const [label, value] of rows) {
     draw(label.toUpperCase(), 56, y, 8, serifBold);
     const lines = wrapText(value, 62, 7.2);
@@ -65,6 +66,21 @@ export async function buildLicensePdf(input: ReceiptPdfInput): Promise<Uint8Arra
     color: muted,
   });
   page.drawText("x402 PAYMENT-RESPONSE is the machine-readable counterpart of this grant.", {
+    x: 56,
+    y: 54,
+    size: 9,
+    font: serif,
+    color: muted,
+  });
+
+  const termsPage = doc.addPage([612, 792]);
+  termsPage.drawText("Terms", { x: 56, y: 730, size: 18, font: serifBold, color: ink });
+  termsPage.drawLine({ start: { x: 56, y: 716 }, end: { x: 556, y: 716 }, thickness: 0.6, color: rule });
+  const terms = input.grant.terms || LICENSE_TERMS;
+  wrapText(terms, 78).forEach((line, i) => {
+    termsPage.drawText(line, { x: 56, y: 688 - i * 14, size: 11, font: serif, color: ink });
+  });
+  termsPage.drawText("Resale of the font files and unapproved editing of the typefaces are not licensed.", {
     x: 56,
     y: 54,
     size: 9,

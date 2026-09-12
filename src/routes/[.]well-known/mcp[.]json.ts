@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CATALOG_LICENSE_USD, LICENSE_USD } from "@/lib/constants";
 import { corsHeaders } from "@/lib/x402";
 import { publicOrigin } from "@/lib/utils";
 
@@ -16,7 +17,8 @@ export const Route = createFileRoute("/.well-known/mcp.json")({
               transport: "http",
             },
             x402: {
-              licenseUsd: 45,
+              licenseUsd: LICENSE_USD,
+              catalogLicenseUsd: CATALOG_LICENSE_USD,
               resource: `${origin}/api/licenses`,
               asset: "USDC",
               network: process.env.X402_NETWORK || "base",

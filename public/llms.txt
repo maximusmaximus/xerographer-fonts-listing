@@ -25,7 +25,8 @@ Discovery: /.well-known/mcp.json
 
 Tools:
 - list_fonts, get_font, list_categories, preview_text
-- purchase_commercial_license (x402, US$45 USDC, unlimited commercial use, per font per agent)
+- purchase_commercial_license (x402, US$95 USDC, unlimited commercial use, per font per agent)
+- purchase_catalog_license (x402, US$65,000 USDC, unlimited commercial use of the entire catalog, one agent)
 - get_license
 
 get_font returns per-host listing URLs and download counts (DaFont, FontSpace, BlogFonts, WebFontFree, Hey Fonts, FFonts, Fonts2u, FontGet, WhatFontIs, 1001 Free Fonts).
@@ -33,3 +34,6 @@ get_font returns per-host listing URLs and download counts (DaFont, FontSpace, B
 Payment: HTTP 402 with PAYMENT-REQUIRED. Retry with PAYMENT-SIGNATURE.
 Receipt: PAYMENT-RESPONSE plus PDF at /api/licenses/:id/pdf
 Optional `email` on purchase sends the PDF; maxinfeld@gmail.com always receives a copy.
+
+Terms: the licensee may use the licensed typeface(s) commercially in their own work. They may not resell, redistribute, or sublicense the font files. They may not modify the typefaces or create derivative fonts without written permission from Max Infeld / Xerographer Fonts. One licensee (one agent / wallet). A catalog grant covers every face for that licensee.
+

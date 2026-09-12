@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/layout";
+import { CATALOG_LICENSE_USD, LICENSE_USD, usdLabel } from "@/lib/constants";
 import { STATS } from "@/lib/fonts";
 import { formatDownloads } from "@/lib/utils";
 
@@ -38,7 +39,10 @@ function About() {
           <p>
             Xerographer Fonts is a donationware foundry: {STATS.count.toLocaleString()} original faces drawn since 2012 —
             eroded, cartoon, script, horror, stencil, and the rest of the photocopy cabinet. Personal use lives on DaFont.
-            Unlimited commercial use is licensed per face, per licensee, for US$45 via x402.
+            Unlimited commercial use is licensed per face, per licensee, for {usdLabel(LICENSE_USD)} via x402 — or{" "}
+            {usdLabel(CATALOG_LICENSE_USD)} for the entire catalog for a single agent. Font files may not be resold
+            or redistributed. Typefaces may not be edited or used to create derivative fonts without written
+            permission.
           </p>
           <p>
             Most art communicates in one direction. The work here is meant to be used: set a line, ship a poster, let an

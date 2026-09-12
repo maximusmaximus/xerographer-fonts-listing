@@ -1,4 +1,5 @@
 import { buildLicensePdf, type ReceiptPdfInput } from "./pdf-receipt";
+import { LICENSE_TERMS } from "./constants";
 
 const LICENSOR_COPY = "maxinfeld@gmail.com";
 
@@ -80,6 +81,8 @@ function receiptText(input: ReceiptPdfInput): string {
     "",
     input.grant.permission,
     "",
+    input.grant.terms || LICENSE_TERMS,
+    "",
     `Receipt: ${input.id}`,
     `Typeface: ${input.grant.fontName} (${input.grant.fontSlug})`,
     `Licensee: ${input.grant.licensee}`,
@@ -101,6 +104,7 @@ function receiptHtml(input: ReceiptPdfInput): string {
   <p style="letter-spacing:.18em;text-transform:uppercase;font-size:12px">Xerographer Fonts</p>
   <h1 style="font-size:28px;font-weight:500">Unlimited Commercial Use License</h1>
   <p>${escapeHtml(input.grant.permission)}</p>
+  <p style="font-size:13px;color:#3f3c37">${escapeHtml(input.grant.terms || LICENSE_TERMS)}</p>
   <table style="font-size:14px;border-collapse:collapse">
     ${row("Receipt", input.id)}
     ${row("Typeface", `${input.grant.fontName} (${input.grant.fontSlug})`)}

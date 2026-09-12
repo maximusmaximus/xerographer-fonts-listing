@@ -1,4 +1,15 @@
-import { LICENSE_USD } from "@/lib/constants";
+import {
+  CATALOG_FONT_NAME,
+  CATALOG_LICENSE_USD,
+  CATALOG_SLUG,
+  DAFONT_AUTHOR,
+  DESIGNER_URL,
+  LICENSE_PERMISSION_CATALOG,
+  LICENSE_PERMISSION_FONT,
+  LICENSE_TERMS,
+  LICENSE_USD,
+  usdAtomic,
+} from "@/lib/constants";
 import { getSql } from "@/lib/db";
 import { emailLicenseReceipt } from "@/lib/email";
 import { getFontOrThrow, withSources } from "@/lib/fonts";
@@ -50,7 +61,8 @@ type LicenseRow = {
 };
 
 export type PurchaseInput = {
-  slug: string;
+  slug?: string;
+  catalog?: boolean;
   email?: string;
   licenseeName?: string;
   origin: string;
@@ -134,6 +146,7 @@ async function persistLicense(input: {
   payerId: string;
   email?: string;
   licenseeName?: string;
+  amountUsd: number;
   network: string;
   txHash: string;
   payload: PaymentPayload;
@@ -147,7 +160,7 @@ async function persistLicense(input: {
       amount_usd, network, asset, tx_hash, payment_payload, payment_response, receipt
     ) values (
       ${id}, ${input.fontSlug}, ${input.fontName}, ${input.payerId}, ${input.email ?? null},
-      ${input.licenseeName ?? null}, ${LICENSE_USD}, ${input.network}, ${"USDC"},
+      ${input.licenseeName ?? null}, ${input.amountUsd}, ${input.network}, ${"USDC"},
       ${input.txHash}, ${JSON.stringify(input.payload)}::jsonb, ${JSON.stringify(input.receipt)}::jsonb,
       ${JSON.stringify(input.receipt)}::jsonb
     )
@@ -182,18 +195,38 @@ async function deliverEmail(license: StoredLicense, origin: string): Promise<Pur
   };
 }
 
+function alreadyResponse(existing: StoredLicense, origin: string): Response {
+  const urls = licenseUrls(origin, existing.id);
+  const body = { ok: true, alreadyLicensed: true, license: existing, emailed: existing.emailStatus === "sent", ...urls };
+  return Response.json(body, {
+    headers: {
+      ...corsHeaders(),
+      "PAYMENT-RESPONSE": Buffer.from(JSON.stringify(existing.receipt), "utf8").toString("base64"),
+    },
+  });
+}
+
 export async function purchaseLicense(request: Request, input: PurchaseInput): Promise<Response> {
-  const font = getFontOrThrow(input.slug);
-  const sources = withSources(font);
+  const catalog = Boolean(input.catalog) || input.slug === CATALOG_SLUG;
+  const font = catalog ? null : getFontOrThrow(input.slug ?? "");
+  const sources = font
+    ? withSources(font)
+    : { dafontUrl: DAFONT_AUTHOR, downloadUrl: DAFONT_AUTHOR, designerUrl: DESIGNER_URL };
+  const fontSlug = catalog ? CATALOG_SLUG : font!.slug;
+  const fontName = catalog ? CATALOG_FONT_NAME : font!.name;
+  const amountUsd = catalog ? CATALOG_LICENSE_USD : LICENSE_USD;
+  const amountAtomic = usdAtomic(amountUsd);
   const resource = `${input.origin}/api/licenses`;
-  const description = `Unlimited Commercial Use License for ${font.name} (Xerographer Fonts)`;
-  const required = paymentRequired(resource, description);
+  const description = catalog
+    ? `Unlimited Commercial Use License for the entire Xerographer Fonts catalog (one agent)`
+    : `Unlimited Commercial Use License for ${fontName} (Xerographer Fonts)`;
+  const required = paymentRequired(resource, description, undefined, amountAtomic);
   const requirement = required.accepts[0]!;
 
   const payload = readPaymentPayload(request);
   if (!payload) {
     return paymentRequiredResponse(
-      paymentRequired(resource, description, "PAYMENT-SIGNATURE header required to purchase a license"),
+      paymentRequired(resource, description, "PAYMENT-SIGNATURE header required to purchase a license", amountAtomic),
     );
   }
 
@@ -202,37 +235,35 @@ export async function purchaseLicense(request: Request, input: PurchaseInput): P
     payer = extractPayer(payload);
   } catch (err) {
     return paymentRequiredResponse(
-      paymentRequired(resource, description, err instanceof Error ? err.message : "Invalid payment payload"),
+      paymentRequired(resource, description, err instanceof Error ? err.message : "Invalid payment payload", amountAtomic),
     );
   }
 
-  const existing = await getLicenseByFontPayer(font.slug, payer);
-  if (existing) {
-    const urls = licenseUrls(input.origin, existing.id);
-    const body = { ok: true, alreadyLicensed: true, license: existing, emailed: existing.emailStatus === "sent", ...urls };
-    return Response.json(body, {
-      headers: {
-        ...corsHeaders(),
-        "PAYMENT-RESPONSE": Buffer.from(JSON.stringify(existing.receipt), "utf8").toString("base64"),
-      },
-    });
+  const catalogExisting = await getLicenseByFontPayer(CATALOG_SLUG, payer);
+  if (catalogExisting) return alreadyResponse(catalogExisting, input.origin);
+
+  if (!catalog) {
+    const existing = await getLicenseByFontPayer(fontSlug, payer);
+    if (existing) return alreadyResponse(existing, input.origin);
   }
 
   const settled = await verifyAndSettle(payload, requirement);
   if (!settled.success || !settled.transaction) {
     return paymentRequiredResponse(
-      paymentRequired(resource, description, settled.errorReason ?? "Payment could not be settled"),
+      paymentRequired(resource, description, settled.errorReason ?? "Payment could not be settled", amountAtomic),
     );
   }
 
   const grant: LicenseGrant = {
-    type: "unlimited-commercial-use",
-    permission: "The licensee is granted unlimited commercial use of this typeface.",
-    fontSlug: font.slug,
-    fontName: font.name,
+    type: catalog ? "catalog-unlimited-commercial-use" : "unlimited-commercial-use",
+    scope: catalog ? "catalog" : "font",
+    permission: catalog ? LICENSE_PERMISSION_CATALOG : LICENSE_PERMISSION_FONT,
+    terms: LICENSE_TERMS,
+    fontSlug,
+    fontName,
     licensee: (input.licenseeName?.trim() || payer).toLowerCase(),
     email: input.email?.trim() || undefined,
-    priceUsd: LICENSE_USD,
+    priceUsd: amountUsd,
     currency: "USDC",
     sources: {
       dafont: sources.dafontUrl,
@@ -251,11 +282,12 @@ export async function purchaseLicense(request: Request, input: PurchaseInput): P
   };
 
   const stored = await persistLicense({
-    fontSlug: font.slug,
-    fontName: font.name,
+    fontSlug,
+    fontName,
     payerId: payer,
     email: input.email?.trim(),
     licenseeName: input.licenseeName?.trim(),
+    amountUsd,
     network: receipt.network,
     txHash: receipt.transaction,
     payload,

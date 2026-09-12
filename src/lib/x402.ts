@@ -1,11 +1,11 @@
-import { LICENSE_USD } from "./constants.ts";
+import { LICENSE_USD, usdAtomic } from "./constants.ts";
 
 /** USDC on Base mainnet. */
 export const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 /** USDC on Base Sepolia. */
 export const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 
-export const LICENSE_AMOUNT_ATOMIC = String(LICENSE_USD * 1_000_000);
+export const LICENSE_AMOUNT_ATOMIC = usdAtomic(LICENSE_USD);
 
 export type X402Network = "base" | "base-sepolia";
 
@@ -48,8 +48,10 @@ export type SettlementResponse = {
 };
 
 export type LicenseGrant = {
-  type: "unlimited-commercial-use";
-  permission: "The licensee is granted unlimited commercial use of this typeface.";
+  type: "unlimited-commercial-use" | "catalog-unlimited-commercial-use";
+  scope: "font" | "catalog";
+  permission: string;
+  terms: string;
   fontSlug: string;
   fontName: string;
   licensee: string;
@@ -108,7 +110,12 @@ export function readPaymentPayload(request: Request): PaymentPayload | null {
   return decodeHeader<PaymentPayload>(raw);
 }
 
-export function paymentRequired(resource: string, description: string, error?: string): PaymentRequiredBody {
+export function paymentRequired(
+  resource: string,
+  description: string,
+  error?: string,
+  maxAmountRequired: string = LICENSE_AMOUNT_ATOMIC,
+): PaymentRequiredBody {
   const { network, payTo, asset } = x402Config();
   return {
     x402Version: 1,
@@ -116,7 +123,7 @@ export function paymentRequired(resource: string, description: string, error?: s
       {
         scheme: "exact",
         network,
-        maxAmountRequired: LICENSE_AMOUNT_ATOMIC,
+        maxAmountRequired,
         resource,
         description,
         mimeType: "application/json",

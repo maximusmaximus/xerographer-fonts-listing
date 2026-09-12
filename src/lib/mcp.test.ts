@@ -11,11 +11,16 @@ describe("MCP tools", () => {
       "list_categories",
       "preview_text",
       "purchase_commercial_license",
+      "purchase_catalog_license",
       "get_license",
     ]);
     const paid = toolList().tools.find((t) => t.name === "purchase_commercial_license");
-    assert.match(paid?.description ?? "", /45/);
+    assert.match(paid?.description ?? "", /95/);
     assert.match(paid?.description ?? "", /x402/);
+    assert.match(paid?.description ?? "", /resold/);
     assert.ok(paid?.inputSchema.properties && "email" in paid.inputSchema.properties);
+    const catalog = toolList().tools.find((t) => t.name === "purchase_catalog_license");
+    assert.match(catalog?.description ?? "", /65,000/);
+    assert.match(catalog?.description ?? "", /edited/);
   });
 });

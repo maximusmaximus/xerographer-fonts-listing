@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PageShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { LICENSE_TERMS } from "@/lib/constants";
 
 const loadLicense = createServerFn({ method: "GET" })
   .validator(z.object({ id: z.string() }))
@@ -34,14 +35,18 @@ export const Route = createFileRoute("/license/$id")({
 
 function LicensePage() {
   const license = Route.useLoaderData();
+  const catalog = license.grant.scope === "catalog" || license.fontSlug === "catalog";
   return (
     <PageShell>
       <article className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
         <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">x402 receipt</p>
-        <h1 className="mt-3 font-display text-4xl">Unlimited commercial use</h1>
+        <h1 className="mt-3 font-display text-4xl">
+          {catalog ? "Catalog commercial use" : "Unlimited commercial use"}
+        </h1>
         <p className="mt-4 text-fg-muted">{license.grant.permission}</p>
         <dl className="mt-8 space-y-3 text-sm">
           <Row label="Typeface" value={`${license.fontName} (${license.fontSlug})`} />
+          <Row label="Scope" value={catalog ? "Entire catalog, one agent" : "Single typeface, one agent"} />
           <Row label="Licensee" value={license.payerId} />
           <Row label="Email" value={license.email ?? "—"} />
           <Row label="Network" value={license.network} />
@@ -49,6 +54,8 @@ function LicensePage() {
           <Row label="DaFont" value={license.grant.sources.dafont} href={license.grant.sources.dafont} />
           <Row label="Download" value={license.grant.sources.download} href={license.grant.sources.download} />
         </dl>
+        <h2 className="mt-10 text-xs uppercase tracking-[0.18em] text-fg-muted">Terms</h2>
+        <p className="mt-3 text-sm leading-relaxed text-fg-muted">{license.grant.terms || LICENSE_TERMS}</p>
         <Button className="mt-8" asChild>
           <a href={`/api/licenses/${license.id}/pdf`}>Download PDF</a>
         </Button>

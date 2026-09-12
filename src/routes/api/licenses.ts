@@ -4,11 +4,14 @@ import { purchaseLicense } from "@/lib/license";
 import { corsHeaders } from "@/lib/x402";
 import { publicOrigin } from "@/lib/utils";
 
-const Body = z.object({
-  slug: z.string().min(1),
-  email: z.string().email().optional(),
-  licenseeName: z.string().max(200).optional(),
-});
+const Body = z
+  .object({
+    slug: z.string().min(1).optional(),
+    catalog: z.boolean().optional(),
+    email: z.string().email().optional(),
+    licenseeName: z.string().max(200).optional(),
+  })
+  .refine((value) => value.catalog || value.slug, { message: "slug or catalog is required" });
 
 export const Route = createFileRoute("/api/licenses")({
   server: {
@@ -23,7 +26,7 @@ export const Route = createFileRoute("/api/licenses")({
         }
         const parsed = Body.safeParse(json);
         if (!parsed.success) {
-          return Response.json({ error: "slug is required" }, { status: 400, headers: corsHeaders() });
+          return Response.json({ error: "slug or catalog is required" }, { status: 400, headers: corsHeaders() });
         }
         return purchaseLicense(request, { ...parsed.data, origin: publicOrigin(request) });
       },

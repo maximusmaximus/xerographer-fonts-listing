@@ -6,7 +6,8 @@
     "transport": "http"
   },
   "x402": {
-    "licenseUsd": 45,
+    "licenseUsd": 95,
+    "catalogLicenseUsd": 65000,
     "resource": "/api/licenses",
     "asset": "USDC",
     "network": "base"

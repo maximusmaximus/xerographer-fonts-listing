@@ -10,13 +10,18 @@ import {
 } from "./x402.ts";
 
 describe("x402 helpers", () => {
-  it("prices unlimited commercial use at 45 USDC", () => {
-    assert.equal(LICENSE_AMOUNT_ATOMIC, "45000000");
+  it("prices unlimited commercial use at 95 USDC", () => {
+    assert.equal(LICENSE_AMOUNT_ATOMIC, "95000000");
     const body = paymentRequired("https://example.com/api/licenses", "license");
     assert.equal(body.x402Version, 1);
     assert.equal(body.accepts[0]?.scheme, "exact");
-    assert.equal(body.accepts[0]?.maxAmountRequired, "45000000");
+    assert.equal(body.accepts[0]?.maxAmountRequired, "95000000");
     assert.equal(body.accepts[0]?.extra.name, "USD Coin");
+  });
+
+  it("prices the catalog grant at 65000 USDC", () => {
+    const body = paymentRequired("https://example.com/api/licenses", "catalog", undefined, "65000000000");
+    assert.equal(body.accepts[0]?.maxAmountRequired, "65000000000");
   });
 
   it("round-trips payment header encoding", () => {
