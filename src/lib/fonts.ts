@@ -1,4 +1,5 @@
 import raw from "../data/fonts.json" with { type: "json" };
+import listingRaw from "../data/listings.json" with { type: "json" };
 import { DAFONT_AUTHOR, DESIGNER_URL, LICENSE_USD } from "./constants.ts";
 
 export type FontRecord = {
@@ -14,17 +15,49 @@ export type FontRecord = {
   charset: string[];
 };
 
+export type HostId = "dafont" | "fontspace" | "blogfonts" | "webfontfree" | "heyfonts";
+
+export type HostListing = {
+  id: HostId;
+  name: string;
+  url: string;
+  downloads?: number;
+};
+
 export type FontWithSources = FontRecord & {
   previewUrl: string;
   dafontUrl: string;
   downloadUrl: string;
-  fontspaceSearch: string;
   designerUrl: string;
+  totalDownloads: number;
+  hosts: HostListing[];
 };
 
 export { DAFONT_AUTHOR, DESIGNER_URL, LICENSE_USD };
 
+type ListingEntry = { url: string; downloads?: number };
+type ListingsFile = {
+  sites: { id: HostId; name: string; designerUrl: string }[];
+  totals: { dafont: number; fontspace: number; webfontfree: number };
+  counts: Record<string, number>;
+  listings: Record<string, Partial<Record<HostId, ListingEntry>>>;
+};
+
 const catalog = raw as FontRecord[];
+const listingData = listingRaw as ListingsFile;
+const extraBySlug = listingData.listings;
+
+export function extraDownloads(slug: string): number {
+  const extra = extraBySlug[slug];
+  if (!extra) return 0;
+  let n = 0;
+  for (const rec of Object.values(extra)) n += rec?.downloads ?? 0;
+  return n;
+}
+
+export function totalDownloadsFor(font: FontRecord): number {
+  return font.downloads + extraDownloads(font.slug);
+}
 
 export function previewUrlFor(slug: string): string {
   const a = slug[0] ?? "x";
@@ -33,13 +66,30 @@ export function previewUrlFor(slug: string): string {
 }
 
 export function withSources(font: FontRecord): FontWithSources {
+  const dafontUrl = `https://www.dafont.com/${font.slug}.font`;
+  const extra = extraBySlug[font.slug] ?? {};
+  const hosts: HostListing[] = [
+    { id: "dafont", name: "DaFont", url: dafontUrl, downloads: font.downloads },
+  ];
+  for (const site of listingData.sites) {
+    if (site.id === "dafont") continue;
+    const hit = extra[site.id];
+    if (!hit) continue;
+    hosts.push({
+      id: site.id,
+      name: site.name,
+      url: hit.url,
+      downloads: hit.downloads,
+    });
+  }
   return {
     ...font,
     previewUrl: previewUrlFor(font.slug),
-    dafontUrl: `https://www.dafont.com/${font.slug}.font`,
+    dafontUrl,
     downloadUrl: `https://dl.dafont.com/dl/?f=${font.slug}`,
-    fontspaceSearch: `https://www.fontspace.com/search?q=${encodeURIComponent(font.name + " xerographer")}`,
     designerUrl: DESIGNER_URL,
+    totalDownloads: hosts.reduce((n, h) => n + (h.downloads ?? 0), 0),
+    hosts,
   };
 }
 
@@ -124,7 +174,7 @@ export function filterFonts(input: FontQuery = {}): FontRecord[] {
   const sorted = rows.slice();
   if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
   else if (sort === "recent") sorted.sort((a, b) => b.yesterday - a.yesterday);
-  else sorted.sort((a, b) => b.downloads - a.downloads);
+  else sorted.sort((a, b) => totalDownloadsFor(b) - totalDownloadsFor(a));
   return sorted;
 }
 
@@ -140,8 +190,20 @@ export function queryFonts(input: FontQuery = {}): FontPage {
   };
 }
 
+const headerPool = catalog.filter((f) => f.category !== "Dingbats" && f.downloads >= 8_000);
+
+export function pickHeaderFont(): FontRecord {
+  const pool = headerPool.length ? headerPool : catalog;
+  return pool[Math.floor(Math.random() * pool.length)] ?? catalog[0]!;
+}
+
 export const STATS = {
   count: catalog.length,
-  downloads: catalog.reduce((n, f) => n + f.downloads, 0),
-  categories: categoryTree().length,
+  dafontDownloads: listingData.totals.dafont,
+  fontspaceDownloads: listingData.totals.fontspace,
+  webfontfreeDownloads: listingData.totals.webfontfree,
+  downloads:
+    listingData.totals.dafont + listingData.totals.fontspace + listingData.totals.webfontfree,
+  hosts: listingData.sites,
+  hostCounts: listingData.counts,
 };

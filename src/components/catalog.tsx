@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { categoryTree, filterFonts, STATS, withSources, type FontQuery } from "@/lib/fonts";
 import { useExplorer } from "@/lib/store";
-import { formatDownloads } from "@/lib/utils";
+import { formatDownloads, formatDownloadsLong } from "@/lib/utils";
 
 const PAGE = 36;
 
@@ -36,10 +36,30 @@ export function CatalogExplorer() {
       <section className="grain mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 sm:pt-16">
         <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">Independent type foundry</p>
         <h1 className="mt-3 max-w-3xl font-display text-4xl text-fg sm:text-6xl">
-          {STATS.count.toLocaleString()} original typefaces.
+          {formatDownloadsLong(STATS.downloads)} downloads.
         </h1>
         <p className="mt-4 max-w-xl text-fg-muted">
-          {formatDownloads(STATS.downloads)} downloads on DaFont. Type a line — every face on screen will set it.
+          {STATS.count.toLocaleString()} original typefaces. Type a line — every face on screen will set it.
+        </p>
+        <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <HeroStat label="Typefaces" value={STATS.count.toLocaleString()} />
+          <HeroStat label="DaFont" value={formatDownloads(STATS.dafontDownloads)} />
+          <HeroStat label="FontSpace" value={formatDownloads(STATS.fontspaceDownloads)} />
+          <HeroStat label="WebFontFree" value={formatDownloads(STATS.webfontfreeDownloads)} />
+        </dl>
+        <p className="mt-4 text-xs text-fg-muted">
+          Also listed on{" "}
+          <a className="underline-offset-4 hover:underline" href="https://blogfonts.com/user/424.htm">
+            BlogFonts
+          </a>{" "}
+          ({STATS.hostCounts.blogfonts}) and{" "}
+          <a
+            className="underline-offset-4 hover:underline"
+            href="https://www.heyfonts.com/designer/max-infeld-xerographer-fonts/"
+          >
+            Hey Fonts
+          </a>{" "}
+          ({STATS.hostCounts.heyfonts}). Totals are summed across hosts.
         </p>
         <div className="mt-8 rounded-xl bg-bg-elevated p-3 shadow-[var(--shadow-border)] sm:p-4">
           <label className="sr-only" htmlFor="tester">
@@ -119,6 +139,15 @@ export function CatalogExplorer() {
         </aside>
         <FontGrid filter={filter} previewText={previewText} previewSize={previewSize} />
       </div>
+    </div>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-bg-elevated px-4 py-4 shadow-[var(--shadow-border)]">
+      <dt className="text-xs uppercase tracking-[0.16em] text-fg-muted">{label}</dt>
+      <dd className="mt-1 font-display text-2xl tabular-nums">{value}</dd>
     </div>
   );
 }

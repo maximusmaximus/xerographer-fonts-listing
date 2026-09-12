@@ -50,7 +50,7 @@ function FontPage() {
           <div>
             <h1 className="font-display text-4xl sm:text-6xl">{font.name}</h1>
             <p className="mt-2 font-mono text-sm text-fg-muted">
-              {formatDownloads(font.downloads)} downloads · {font.files} file{font.files === 1 ? "" : "s"}
+              {formatDownloads(font.totalDownloads)} downloads · {font.files} file{font.files === 1 ? "" : "s"}
               {font.size ? ` · ${font.size}` : ""}
             </p>
             <div className="mt-8 rounded-xl bg-bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-6">
@@ -85,11 +85,20 @@ function FontPage() {
             <div className="mt-8">
               <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Sources</h2>
               <ul className="mt-3 space-y-2 text-sm">
-                <li>
-                  <a className="underline-offset-4 hover:underline" href={font.dafontUrl}>
-                    DaFont page
-                  </a>
-                </li>
+                {font.hosts.map((host) => (
+                  <li key={host.id} className="flex flex-wrap items-baseline gap-x-2">
+                    <a className="underline-offset-4 hover:underline" href={host.url}>
+                      {host.name}
+                    </a>
+                    {host.downloads ? (
+                      <span className="font-mono text-xs tabular-nums text-fg-muted">
+                        {formatDownloads(host.downloads)} downloads
+                      </span>
+                    ) : (
+                      <span className="text-xs text-fg-muted">listing</span>
+                    )}
+                  </li>
+                ))}
                 <li>
                   <a className="underline-offset-4 hover:underline" href={font.downloadUrl}>
                     Download zip

@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { pickHeaderFont } from "@/lib/fonts";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -11,15 +12,53 @@ const links = [
   { to: "/agents", label: "Agents" },
 ] as const;
 
+let headerPick: ReturnType<typeof pickHeaderFont> | null = null;
+
+function loadHeaderFace(slug: string, family: string): Promise<boolean> {
+  const face = new FontFace(family, `url(/api/font-file/${slug})`);
+  return face
+    .load()
+    .then((ready) => {
+      document.fonts.add(ready);
+      return true;
+    })
+    .catch(() => false);
+}
+
+function HeaderWordmark() {
+  const [family, setFamily] = useState<string | null>(null);
+  const [fontName, setFontName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!headerPick) headerPick = pickHeaderFont();
+    const font = headerPick;
+    const fam = `xf-${font.slug}`;
+    setFontName(font.name);
+    void loadHeaderFace(font.slug, fam).then((ok) => {
+      if (ok) setFamily(fam);
+    });
+  }, []);
+
+  return (
+    <Link to="/" className="flex min-w-0 items-baseline gap-2">
+      <span
+        className="max-w-[46vw] truncate text-lg tracking-tight sm:max-w-none sm:text-xl"
+        style={{ fontFamily: family ? `${family}, var(--font-display)` : "var(--font-display)" }}
+        title={fontName ? `Set in ${fontName}` : "Xerographer Fonts"}
+      >
+        Xerographer
+      </span>
+      <span className="hidden text-xs uppercase tracking-[0.22em] text-fg-muted sm:inline">Fonts</span>
+    </Link>
+  );
+}
+
 export function SiteHeader() {
   const { theme, toggle } = useTheme();
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
-        <Link to="/" className="flex items-baseline gap-2">
-          <span className="font-display text-lg tracking-tight sm:text-xl">Xerographer</span>
-          <span className="hidden text-xs uppercase tracking-[0.22em] text-fg-muted sm:inline">Fonts</span>
-        </Link>
+        <HeaderWordmark />
         <nav className="flex min-w-0 shrink items-center gap-0.5 sm:gap-2">
           {links.map((link) => (
             <Link
@@ -52,10 +91,24 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p>Xerographer Fonts · Max Infeld · Donationware + commercial licenses</p>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
-          <a className="hover:text-fg" href="https://www.dafont.com/max-infeld.d3584">DaFont</a>
-          <a className="hover:text-fg" href="https://maxi.grok.me">maxi.grok.me</a>
-          <a className="hover:text-fg" href="https://curio.cards">curio.cards</a>
-          <a className="hover:text-fg" href="mailto:maxinfeld@gmail.com">Licensing</a>
+          <a className="hover:text-fg" href="https://www.dafont.com/max-infeld.d3584">
+            DaFont
+          </a>
+          <a className="hover:text-fg" href="https://www.fontspace.com/xerographer-fonts">
+            FontSpace
+          </a>
+          <a className="hover:text-fg" href="https://blogfonts.com/user/424.htm">
+            BlogFonts
+          </a>
+          <a className="hover:text-fg" href="https://maxi.grok.me">
+            maxi.grok.me
+          </a>
+          <a className="hover:text-fg" href="https://curio.cards">
+            curio.cards
+          </a>
+          <a className="hover:text-fg" href="mailto:maxinfeld@gmail.com">
+            Licensing
+          </a>
         </div>
       </div>
     </footer>

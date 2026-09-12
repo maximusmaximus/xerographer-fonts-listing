@@ -94,7 +94,7 @@ export function FontCard({
             </p>
           </div>
           <p className="shrink-0 font-mono text-xs tabular-nums text-fg-subtle">
-            {formatDownloads(font.downloads)}
+            {formatDownloads(font.totalDownloads)}
           </p>
         </div>
       </Link>

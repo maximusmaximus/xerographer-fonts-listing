@@ -6,9 +6,25 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDownloads(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
-  return String(n);
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    const digits = m >= 100 ? 0 : 1;
+    return `${m.toFixed(digits).replace(/\.0$/, "")}M`;
+  }
+  if (n >= 1_000) {
+    const k = n / 1_000;
+    const digits = k >= 100 ? 0 : 1;
+    return `${k.toFixed(digits).replace(/\.0$/, "")}k`;
+  }
+  return n.toLocaleString("en-US");
+}
+
+export function formatDownloadsLong(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return `${m.toFixed(1).replace(/\.0$/, "")} million`;
+  }
+  return formatDownloads(n);
 }
 
 export function publicOrigin(request?: Request): string {

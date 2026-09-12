@@ -4,6 +4,8 @@ Catalog, live type tester, MCP service, and x402 commercial licensing for [Xerog
 
 1,376 original typefaces, pulled from DaFont. Personal use remains donationware. Unlimited commercial use is **US$45 USDC per font per agent**, settled with [x402](https://www.x402.org).
 
+Download counts are aggregated from DaFont, FontSpace, and WebFontFree. Each face links to its individual pages on those hosts, plus BlogFonts and Hey Fonts where listed.
+
 ## Humans
 
 - Scroll the catalog or filter by DaFont category

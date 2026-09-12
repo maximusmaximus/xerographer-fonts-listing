@@ -17,9 +17,23 @@ function About() {
         </p>
         <div className="mt-8 grid gap-3 sm:grid-cols-3">
           <Stat label="Typefaces" value={STATS.count.toLocaleString()} />
-          <Stat label="DaFont downloads" value={formatDownloads(STATS.downloads)} />
+          <Stat label="Downloads" value={formatDownloads(STATS.downloads)} />
           <Stat label="Started" value="2012" />
         </div>
+        <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
+          <div>
+            <dt className="text-xs uppercase tracking-[0.16em] text-fg-muted">DaFont</dt>
+            <dd className="mt-1 font-mono text-sm tabular-nums">{formatDownloads(STATS.dafontDownloads)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.16em] text-fg-muted">FontSpace</dt>
+            <dd className="mt-1 font-mono text-sm tabular-nums">{formatDownloads(STATS.fontspaceDownloads)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.16em] text-fg-muted">WebFontFree</dt>
+            <dd className="mt-1 font-mono text-sm tabular-nums">{formatDownloads(STATS.webfontfreeDownloads)}</dd>
+          </div>
+        </dl>
         <div className="mt-10 space-y-5 text-fg">
           <p>
             Xerographer Fonts is a donationware foundry: {STATS.count.toLocaleString()} original faces drawn since 2012 —
@@ -34,7 +48,11 @@ function About() {
         <ul className="mt-10 space-y-3 text-fg">
           <Li href="https://maxi.grok.me" label="maxi.grok.me" detail="Biography and current practice" />
           <Li href="https://curio.cards" label="curio.cards" detail="Curio Cards — early Ethereum art" />
-          <Li href="https://www.dafont.com/max-infeld.d3584" label="DaFont author page" detail="The canonical download source" />
+          <Li href="https://www.dafont.com/max-infeld.d3584" label="DaFont author page" detail="Canonical download source" />
+          <Li href="https://www.fontspace.com/xerographer-fonts" label="FontSpace" detail={`${STATS.hostCounts.fontspace} faces`} />
+          <Li href="https://blogfonts.com/user/424.htm" label="BlogFonts" detail={`${STATS.hostCounts.blogfonts} faces`} />
+          <Li href="https://www.webfontfree.com/en/designers/859" label="WebFontFree" detail={`${STATS.hostCounts.webfontfree} faces`} />
+          <Li href="https://www.heyfonts.com/designer/max-infeld-xerographer-fonts/" label="Hey Fonts" detail={`${STATS.hostCounts.heyfonts} faces`} />
           <Li href="https://www.flickr.com/photos/maximusmaximus/" label="Flickr" detail="Photostream" />
           <Li href="https://github.com/maximusmaximus" label="GitHub" detail="maximusmaximus" />
         </ul>
