@@ -44,6 +44,7 @@ export function CatalogExplorer() {
     }
   }
 
+  const live = previewText.trim().length > 0;
   const tree = useMemo(() => categoryTree(), []);
   const filter: FontQuery = {
     q: query,
@@ -108,22 +109,27 @@ export function CatalogExplorer() {
             className="h-14 border-0 bg-transparent text-lg shadow-none sm:text-xl"
           />
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label className="flex flex-1 items-center gap-3 text-xs uppercase tracking-[0.16em] text-fg-muted">
-              Size
-              <input
-                type="range"
-                min={28}
-                max={120}
-                value={previewSize}
-                onChange={(e) => setPreviewSize(Number(e.target.value))}
-                className="h-11 w-full min-w-0 accent-accent"
-                suppressHydrationWarning
-              />
-            </label>
-            <div className="flex min-w-0 flex-wrap items-center gap-3">
-              <ColorField label="Background" value={previewBg} onChange={setPreviewBg} />
-              <ColorField label="Font" value={previewFg} onChange={setPreviewFg} />
-            </div>
+            {live ? (
+              <label className="flex flex-1 items-center gap-3 text-xs uppercase tracking-[0.16em] text-fg-muted">
+                Size
+                <input
+                  type="range"
+                  min={28}
+                  max={120}
+                  value={previewSize}
+                  onChange={(e) => setPreviewSize(Number(e.target.value))}
+                  className="h-11 w-full min-w-0 accent-accent"
+                  aria-label="Preview size"
+                  suppressHydrationWarning
+                />
+              </label>
+            ) : null}
+            {live ? (
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
+                <ColorField label="Background" value={previewBg} onChange={setPreviewBg} />
+                <ColorField label="Font" value={previewFg} onChange={setPreviewFg} />
+              </div>
+            ) : null}
             <Input
               value={query}
               placeholder="Search names"
