@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { FontWithSources } from "@/lib/fonts";
+import { fontPreviewSearch } from "@/lib/font-search";
 import { formatDownloads } from "@/lib/utils";
 
 const faces = new Map<string, Promise<boolean>>();
@@ -61,6 +62,7 @@ export function FontCard({
       <Link
         to="/font/$slug"
         params={{ slug: font.slug }}
+        search={fontPreviewSearch(previewText, previewSize)}
         className="group flex flex-col overflow-hidden rounded-xl bg-bg-elevated shadow-[var(--shadow-border)] transition-[box-shadow] duration-150 ease-out hover:shadow-[var(--shadow-border-hover)]"
       >
         <div className="relative flex min-h-32 items-center overflow-hidden px-4 py-6 sm:min-h-40">

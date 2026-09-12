@@ -2,10 +2,13 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { PageShell } from "@/components/layout";
 import { LicensePanel } from "@/components/license-panel";
 import { FontPlayground } from "@/components/playground";
+import { parseFontSearch } from "@/lib/font-search";
 import { getFont, withSources } from "@/lib/fonts";
+import { useExplorer } from "@/lib/store";
 import { formatDownloads } from "@/lib/utils";
 
 export const Route = createFileRoute("/font/$slug")({
+  validateSearch: parseFontSearch,
   loader: ({ params }) => {
     const font = getFont(params.slug);
     if (!font) throw notFound();
@@ -16,6 +19,11 @@ export const Route = createFileRoute("/font/$slug")({
 
 function FontPage() {
   const font = Route.useLoaderData();
+  const search = Route.useSearch();
+  const catalogText = useExplorer((s) => s.previewText);
+  const catalogSize = useExplorer((s) => s.previewSize);
+  const initialText = search.text || catalogText.trim() || undefined;
+  const initialSize = search.size ?? (catalogText.trim() ? catalogSize : undefined);
 
   return (
     <PageShell>
@@ -34,7 +42,13 @@ function FontPage() {
               {font.size ? ` · ${font.size}` : ""}
             </p>
             <div className="mt-8">
-              <FontPlayground slug={font.slug} name={font.name} />
+              <FontPlayground
+                key={`${font.slug}:${initialText ?? ""}:${initialSize ?? ""}`}
+                slug={font.slug}
+                name={font.name}
+                initialText={initialText}
+                initialSize={initialSize}
+              />
             </div>
             <div className="mt-8">
               <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Sources</h2>

@@ -20,11 +20,22 @@ import { cn } from "@/lib/utils";
 const DEFAULT_BG = LOOKS[0].bg;
 const DEFAULT_FG = LOOKS[0].fg;
 
-export function FontPlayground({ slug, name }: { slug: string; name: string }) {
+export function FontPlayground({
+  slug,
+  name,
+  initialText,
+  initialSize,
+}: {
+  slug: string;
+  name: string;
+  initialText?: string;
+  initialSize?: number;
+}) {
   const stageRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLParagraphElement>(null);
-  const [text, setText] = useState(name);
-  const [size, setSize] = useState(72);
+  const seededText = initialText?.trim() || name;
+  const [text, setText] = useState(seededText);
+  const [size, setSize] = useState(initialSize ?? 72);
   const [bg, setBg] = useState<string>(DEFAULT_BG);
   const [fg, setFg] = useState<string>(DEFAULT_FG);
   const [align, setAlign] = useState<Align>("left");
@@ -104,7 +115,7 @@ export function FontPlayground({ slug, name }: { slug: string; name: string }) {
   }
 
   function reset() {
-    setText(name);
+    setText(seededText);
     setSize(72);
     setBg(DEFAULT_BG);
     setFg(DEFAULT_FG);
