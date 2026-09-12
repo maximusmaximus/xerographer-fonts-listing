@@ -52,7 +52,7 @@ export function toolList() {
       },
       {
         name: "get_font",
-        description: "Get one typeface with DaFont, download, and designer source links.",
+        description: "Get one typeface with DaFont, download, designer, and mirror source links (FFonts, Fonts2u, FontGet, WhatFontIs, 1001 Free Fonts).",
         inputSchema: {
           type: "object",
           required: ["slug"],

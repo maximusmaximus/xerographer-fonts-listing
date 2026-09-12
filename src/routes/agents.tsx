@@ -32,7 +32,7 @@ function Agents() {
         <h2 className="mt-12 text-2xl">Tools</h2>
         <ul className="mt-4 space-y-3 text-sm text-fg-muted">
           <li><span className="font-mono text-fg">list_fonts</span> — search, category, sort, pagination</li>
-          <li><span className="font-mono text-fg">get_font</span> — metadata and source links</li>
+          <li><span className="font-mono text-fg">get_font</span> — metadata and source links (DaFont plus nine mirrors)</li>
           <li><span className="font-mono text-fg">list_categories</span> — DaFont themes</li>
           <li><span className="font-mono text-fg">preview_text</span> — live TTF URL + specimen</li>
           <li><span className="font-mono text-fg">purchase_commercial_license</span> — x402, US${LICENSE_USD}, optional email</li>

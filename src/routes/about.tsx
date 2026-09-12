@@ -53,6 +53,11 @@ function About() {
           <Li href="https://blogfonts.com/user/424.htm" label="BlogFonts" detail={`${STATS.hostCounts.blogfonts} faces`} />
           <Li href="https://www.webfontfree.com/en/designers/859" label="WebFontFree" detail={`${STATS.hostCounts.webfontfree} faces`} />
           <Li href="https://www.heyfonts.com/designer/max-infeld-xerographer-fonts/" label="Hey Fonts" detail={`${STATS.hostCounts.heyfonts} faces`} />
+          <Li href="https://www.ffonts.net/tag/infeld" label="FFonts" detail="Linked on every face" />
+          <Li href="https://fonts2u.com/search.html?q=xerographer" label="Fonts2u" detail="Linked on every face" />
+          <Li href="https://www.fontget.com/?s=xerographer" label="FontGet" detail="Linked on every face" />
+          <Li href="https://www.whatfontis.com/" label="WhatFontIs" detail="Linked on every face" />
+          <Li href="https://www.1001freefonts.com/designer-xerographer-fonts-fontlisting.php" label="1001 Free Fonts" detail="Designer listing" />
           <Li href="https://www.flickr.com/photos/maximusmaximus/" label="Flickr" detail="Photostream" />
           <Li href="https://github.com/maximusmaximus" label="GitHub" detail="maximusmaximus" />
         </ul>

@@ -1,7 +1,7 @@
 # Xerographer Fonts
 
 Independent type foundry by Max Infeld. 1,376 original typefaces.
-Downloads (aggregated): DaFont + FontSpace + WebFontFree. Individual pages also on BlogFonts and Hey Fonts.
+Downloads (aggregated): DaFont + FontSpace + WebFontFree. Individual pages also on BlogFonts, Hey Fonts, FFonts, Fonts2u, FontGet, WhatFontIs, and 1001 Free Fonts.
 
 ## For people
 - Browse and filter the catalog, or type custom text to test faces.
@@ -13,6 +13,11 @@ Downloads (aggregated): DaFont + FontSpace + WebFontFree. Individual pages also 
 - BlogFonts: https://blogfonts.com/user/424.htm
 - WebFontFree: https://www.webfontfree.com/en/designers/859
 - Hey Fonts: https://www.heyfonts.com/designer/max-infeld-xerographer-fonts/
+- FFonts: https://www.ffonts.net/tag/infeld
+- Fonts2u: per-face pages on every typeface
+- FontGet: per-face pages on every typeface
+- WhatFontIs: per-face pages on every typeface
+- 1001 Free Fonts: https://www.1001freefonts.com/designer-xerographer-fonts-fontlisting.php
 
 ## For agents
 MCP endpoint: /api/mcp
@@ -23,7 +28,7 @@ Tools:
 - purchase_commercial_license (x402, US$45 USDC, unlimited commercial use, per font per agent)
 - get_license
 
-get_font returns per-host listing URLs and download counts (DaFont, FontSpace, BlogFonts, WebFontFree, Hey Fonts).
+get_font returns per-host listing URLs and download counts (DaFont, FontSpace, BlogFonts, WebFontFree, Hey Fonts, FFonts, Fonts2u, FontGet, WhatFontIs, 1001 Free Fonts).
 
 Payment: HTTP 402 with PAYMENT-REQUIRED. Retry with PAYMENT-SIGNATURE.
 Receipt: PAYMENT-RESPONSE plus PDF at /api/licenses/:id/pdf

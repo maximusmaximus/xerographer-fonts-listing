@@ -38,6 +38,34 @@ describe("font catalog", () => {
     assert.ok(brew.hosts.some((h) => h.id === "heyfonts" && h.url.includes("brewski-font")));
   });
 
+  it("links every face to FFonts, Fonts2u, FontGet, WhatFontIs, and 1001 Free Fonts", () => {
+    const crack = withSources(getFont("crackvetica")!);
+    const ids = crack.hosts.map((h) => h.id as string);
+    for (const id of ["ffonts", "fonts2u", "fontget", "whatfontis", "freefonts1001"]) {
+      assert.ok(ids.includes(id), `missing ${id}`);
+    }
+    assert.match(crack.hosts.find((h) => h.id === "ffonts")?.url ?? "", /ffonts\.net\/Crackvetica\.font$/);
+    assert.match(crack.hosts.find((h) => h.id === "fonts2u")?.url ?? "", /fonts2u\.com\/crackvetica\.font$/);
+    assert.match(crack.hosts.find((h) => h.id === "fontget")?.url ?? "", /fontget\.com\/font\/crackvetica\/$/);
+    assert.match(crack.hosts.find((h) => h.id === "whatfontis")?.url ?? "", /whatfontis\.com\/FF_Crackvetica\.font$/);
+    assert.match(
+      crack.hosts.find((h) => h.id === "freefonts1001")?.url ?? "",
+      /1001freefonts\.com\/crackvetica\.font$/,
+    );
+
+    const fun = withSources(getFont("funsized")!);
+    assert.match(fun.hosts.find((h) => h.id === "ffonts")?.url ?? "", /FunSized\.font$/);
+    assert.match(fun.hosts.find((h) => h.id === "fontget")?.url ?? "", /font\/fun-sized\/$/);
+    assert.match(fun.hosts.find((h) => h.id === "freefonts1001")?.url ?? "", /fun-sized\.font$/);
+
+    const heat = withSources(getFont("hotsweat")!);
+    assert.match(heat.hosts.find((h) => h.id === "freefonts1001")?.url ?? "", /hot-sweat\.font$/);
+
+    const mirrors = ["ffonts", "fonts2u", "fontget", "whatfontis", "freefonts1001"];
+    const every = allFonts().map((f) => withSources(f));
+    assert.ok(every.every((f) => f.hosts.filter((h) => mirrors.includes(h.id)).length === 5));
+  });
+
   it("filters by category and search", () => {
     const eroded = queryFonts({ category: "Fancy", subcategory: "Eroded", limit: 10 });
     assert.ok(eroded.total > 50);

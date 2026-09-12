@@ -15,7 +15,17 @@ export type FontRecord = {
   charset: string[];
 };
 
-export type HostId = "dafont" | "fontspace" | "blogfonts" | "webfontfree" | "heyfonts";
+export type HostId =
+  | "dafont"
+  | "fontspace"
+  | "blogfonts"
+  | "webfontfree"
+  | "heyfonts"
+  | "ffonts"
+  | "fonts2u"
+  | "fontget"
+  | "whatfontis"
+  | "freefonts1001";
 
 export type HostListing = {
   id: HostId;
@@ -47,6 +57,46 @@ const catalog = raw as FontRecord[];
 const listingData = listingRaw as ListingsFile;
 const extraBySlug = listingData.listings;
 
+function pascalName(name: string): string {
+  return name
+    .replace(/['’]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join("");
+}
+
+function kebabName(name: string): string {
+  const splitCamel = name.replace(/([a-z])([A-Z])/g, "$1-$2").replace(/['’]/g, "");
+  return splitCamel
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function ffontsSlug(font: FontRecord): string {
+  if (font.slug.includes("-")) {
+    return font.slug
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("-");
+  }
+  return pascalName(font.name);
+}
+
+/** Hosts that list nearly the full library — every face gets a constructed page URL. */
+const MIRROR_HOSTS: { id: HostId; name: string; url: (font: FontRecord) => string }[] = [
+  { id: "ffonts", name: "FFonts", url: (f) => `https://www.ffonts.net/${ffontsSlug(f)}.font` },
+  { id: "fonts2u", name: "Fonts2u", url: (f) => `https://fonts2u.com/${f.slug}.font` },
+  { id: "fontget", name: "FontGet", url: (f) => `https://www.fontget.com/font/${kebabName(f.name)}/` },
+  { id: "whatfontis", name: "WhatFontIs", url: (f) => `https://www.whatfontis.com/FF_${pascalName(f.name)}.font` },
+  {
+    id: "freefonts1001",
+    name: "1001 Free Fonts",
+    url: (f) => `https://www.1001freefonts.com/${kebabName(f.name)}.font`,
+  },
+];
+
 export function extraDownloads(slug: string): number {
   const extra = extraBySlug[slug];
   if (!extra) return 0;
@@ -71,16 +121,23 @@ export function withSources(font: FontRecord): FontWithSources {
   const hosts: HostListing[] = [
     { id: "dafont", name: "DaFont", url: dafontUrl, downloads: font.downloads },
   ];
+  const seen = new Set<HostId>(["dafont"]);
   for (const site of listingData.sites) {
-    if (site.id === "dafont") continue;
+    if (seen.has(site.id)) continue;
     const hit = extra[site.id];
     if (!hit) continue;
+    seen.add(site.id);
     hosts.push({
       id: site.id,
       name: site.name,
       url: hit.url,
       downloads: hit.downloads,
     });
+  }
+  for (const mirror of MIRROR_HOSTS) {
+    if (seen.has(mirror.id)) continue;
+    seen.add(mirror.id);
+    hosts.push({ id: mirror.id, name: mirror.name, url: mirror.url(font) });
   }
   return {
     ...font,

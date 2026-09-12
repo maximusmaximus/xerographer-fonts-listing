@@ -84,29 +84,36 @@ function FontPage() {
             </div>
             <div className="mt-8">
               <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Sources</h2>
-              <ul className="mt-3 space-y-2 text-sm">
+              <ul className="mt-3 flex flex-wrap gap-2">
                 {font.hosts.map((host) => (
-                  <li key={host.id} className="flex flex-wrap items-baseline gap-x-2">
-                    <a className="underline-offset-4 hover:underline" href={host.url}>
+                  <li key={host.id}>
+                    <a
+                      href={host.url}
+                      className="inline-flex h-11 items-center rounded-full bg-bg-subtle px-3 text-sm text-fg transition-colors hover:bg-bg-elevated"
+                    >
                       {host.name}
+                      {host.downloads ? (
+                        <span className="ml-2 font-mono text-xs tabular-nums text-fg-muted">
+                          {formatDownloads(host.downloads)}
+                        </span>
+                      ) : null}
                     </a>
-                    {host.downloads ? (
-                      <span className="font-mono text-xs tabular-nums text-fg-muted">
-                        {formatDownloads(host.downloads)} downloads
-                      </span>
-                    ) : (
-                      <span className="text-xs text-fg-muted">listing</span>
-                    )}
                   </li>
                 ))}
                 <li>
-                  <a className="underline-offset-4 hover:underline" href={font.downloadUrl}>
+                  <a
+                    className="inline-flex h-11 items-center rounded-full bg-bg-subtle px-3 text-sm text-fg transition-colors hover:bg-bg-elevated"
+                    href={font.downloadUrl}
+                  >
                     Download zip
                   </a>
                 </li>
                 <li>
-                  <a className="underline-offset-4 hover:underline" href={font.designerUrl}>
-                    Designer — maxi.grok.me
+                  <a
+                    className="inline-flex h-11 items-center rounded-full bg-bg-subtle px-3 text-sm text-fg transition-colors hover:bg-bg-elevated"
+                    href={font.designerUrl}
+                  >
+                    Designer
                   </a>
                 </li>
               </ul>
