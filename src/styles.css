@@ -109,6 +109,18 @@ html:not(.dark) .preview-invert {
   filter: none;
 }
 
+@keyframes glyph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.glyph-spin {
+  display: inline-block;
+  transform-origin: center;
+  animation: glyph-spin 1.15s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

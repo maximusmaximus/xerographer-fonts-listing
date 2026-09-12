@@ -2,9 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { FontWithSources } from "@/lib/fonts";
 import { fontPreviewSearch } from "@/lib/font-search";
+import { spinChar } from "@/lib/spin-char";
 import { formatDownloads } from "@/lib/utils";
 
 const faces = new Map<string, Promise<boolean>>();
+const loaded = new Set<string>();
 
 function loadFace(slug: string): Promise<boolean> {
   const hit = faces.get(slug);
@@ -13,6 +15,7 @@ function loadFace(slug: string): Promise<boolean> {
     const face = new FontFace(`xf-${slug}`, `url(/api/font-file/${slug})`);
     const ready = await face.load();
     document.fonts.add(ready);
+    loaded.add(slug);
     return true;
   })().catch(() => false);
   faces.set(slug, promise);
@@ -30,7 +33,8 @@ export function FontCard({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => loaded.has(font.slug));
+  const [failed, setFailed] = useState(false);
   const live = previewText.trim().length > 0;
 
   useEffect(() => {
@@ -48,9 +52,15 @@ export function FontCard({
 
   useEffect(() => {
     if (!visible || !live) return;
+    if (loaded.has(font.slug)) {
+      setReady(true);
+      return;
+    }
     let cancelled = false;
     void loadFace(font.slug).then((ok) => {
-      if (!cancelled) setReady(ok);
+      if (cancelled) return;
+      if (ok) setReady(true);
+      else setFailed(true);
     });
     return () => {
       cancelled = true;
@@ -66,17 +76,23 @@ export function FontCard({
         className="group flex flex-col overflow-hidden rounded-xl bg-bg-elevated shadow-[var(--shadow-border)] transition-[box-shadow] duration-150 ease-out hover:shadow-[var(--shadow-border-hover)]"
       >
         <div className="relative flex min-h-32 items-center overflow-hidden px-4 py-6 sm:min-h-40">
-          {live ? (
+          {live && ready ? (
             <p
               className="w-full truncate text-fg"
               style={{
-                fontFamily: ready ? `xf-${font.slug}, var(--font-display)` : "var(--font-display)",
+                fontFamily: `xf-${font.slug}, var(--font-display)`,
                 fontSize: `clamp(1.25rem, ${previewSize / 16}rem, 4.5rem)`,
                 lineHeight: 1.1,
               }}
             >
               {previewText}
             </p>
+          ) : live && !failed ? (
+            <div className="flex w-full items-center justify-center" aria-busy="true" aria-label={`Loading ${font.name}`}>
+              <span className="glyph-spin select-none font-display text-5xl leading-none text-fg">
+                {spinChar(previewText, font.slug)}
+              </span>
+            </div>
           ) : visible ? (
             <img
               src={`/api/preview-image/${font.slug}`}
