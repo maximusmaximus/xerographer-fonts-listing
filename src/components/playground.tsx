@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { ColorField } from "@/components/color-field";
 import { Textarea } from "@/components/ui/input";
 import { applyCase, fileStem, LOOKS, SAMPLE_COPY, type Align, type CaseMode } from "@/lib/specimen.ts";
 import { downloadBlob, outlineSpecimen, rasterizeSpecimen, type SpecimenStyle } from "@/lib/specimen-render.ts";
@@ -25,19 +26,23 @@ export function FontPlayground({
   name,
   initialText,
   initialSize,
+  initialFg,
+  initialBg,
 }: {
   slug: string;
   name: string;
   initialText?: string;
   initialSize?: number;
+  initialFg?: string;
+  initialBg?: string;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLParagraphElement>(null);
   const seededText = initialText?.trim() || name;
   const [text, setText] = useState(seededText);
   const [size, setSize] = useState(initialSize ?? 72);
-  const [bg, setBg] = useState<string>(DEFAULT_BG);
-  const [fg, setFg] = useState<string>(DEFAULT_FG);
+  const [bg, setBg] = useState<string>(initialBg ?? DEFAULT_BG);
+  const [fg, setFg] = useState<string>(initialFg ?? DEFAULT_FG);
   const [align, setAlign] = useState<Align>("left");
   const [tracking, setTracking] = useState(0);
   const [leading, setLeading] = useState(1.15);
@@ -116,9 +121,9 @@ export function FontPlayground({
 
   function reset() {
     setText(seededText);
-    setSize(72);
-    setBg(DEFAULT_BG);
-    setFg(DEFAULT_FG);
+    setSize(initialSize ?? 72);
+    setBg(initialBg ?? DEFAULT_BG);
+    setFg(initialFg ?? DEFAULT_FG);
     setAlign("left");
     setTracking(0);
     setLeading(1.15);
@@ -129,7 +134,7 @@ export function FontPlayground({
   const display = applyCase(text, caseMode);
 
   return (
-    <div className="rounded-xl bg-bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-6">
+    <div className="min-w-0 overflow-hidden rounded-xl bg-bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-6">
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -141,7 +146,7 @@ export function FontPlayground({
 
       <div
         ref={stageRef}
-        className="mt-3 min-h-48 overflow-hidden rounded-lg p-5 sm:min-h-64 sm:p-8"
+        className="playground-stage mt-3 rounded-lg p-5 sm:p-8"
         style={{ background: bg, color: fg }}
       >
         <p
@@ -150,11 +155,12 @@ export function FontPlayground({
           className="break-words"
           style={{
             fontFamily: ready ? `xf-${slug}, var(--font-display)` : "var(--font-display)",
-            fontSize: `clamp(1.5rem, ${size / 16}rem, 7rem)`,
+            fontSize: `clamp(1.5rem, ${size / 16}rem, 5.5rem)`,
             lineHeight: leading,
             letterSpacing: `${tracking}em`,
             textAlign: align,
             whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
           }}
         >
           {display || "Type something"}
@@ -190,8 +196,8 @@ export function FontPlayground({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <ColorField label="Window" value={bg} onChange={setBg} />
-        <ColorField label="Text" value={fg} onChange={setFg} />
+        <ColorField label="Background" value={bg} onChange={setBg} />
+        <ColorField label="Font" value={fg} onChange={setFg} />
         <ToolGroup label="Looks">
           {LOOKS.map((look) => (
             <button
@@ -295,27 +301,6 @@ function Tool({
     >
       {children}
     </button>
-  );
-}
-
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <label className="flex items-center gap-3">
-      <span className="w-16 text-xs uppercase tracking-[0.16em] text-fg-muted">{label}</span>
-      <span
-        className="relative size-11 overflow-hidden rounded-sm shadow-[var(--shadow-border)]"
-        style={{ background: value }}
-      >
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
-          aria-label={label}
-        />
-      </span>
-      <span className="hidden font-mono text-xs tabular-nums text-fg-muted sm:inline">{value}</span>
-    </label>
   );
 }
 

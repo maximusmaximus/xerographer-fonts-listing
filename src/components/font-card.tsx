@@ -26,10 +26,14 @@ export function FontCard({
   font,
   previewText,
   previewSize,
+  previewFg,
+  previewBg,
 }: {
   font: FontWithSources;
   previewText: string;
   previewSize: number;
+  previewFg: string;
+  previewBg: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -68,28 +72,31 @@ export function FontCard({
   }, [visible, live, font.slug]);
 
   return (
-    <div ref={ref}>
+    <div ref={ref} className="min-w-0">
       <Link
         to="/font/$slug"
         params={{ slug: font.slug }}
-        search={fontPreviewSearch(previewText, previewSize)}
+        search={fontPreviewSearch(previewText, previewSize, previewFg, previewBg)}
         className="group flex flex-col overflow-hidden rounded-xl bg-bg-elevated shadow-[var(--shadow-border)] transition-[box-shadow] duration-150 ease-out hover:shadow-[var(--shadow-border-hover)]"
       >
-        <div className="relative flex min-h-32 items-center overflow-hidden px-4 py-6 sm:min-h-40">
+        <div
+          className="preview-stage relative flex items-center overflow-hidden px-4"
+          style={live ? { background: previewBg, color: previewFg } : undefined}
+        >
           {live && ready ? (
             <p
-              className="w-full truncate text-fg"
+              className="w-full truncate"
               style={{
                 fontFamily: `xf-${font.slug}, var(--font-display)`,
-                fontSize: `clamp(1.25rem, ${previewSize / 16}rem, 4.5rem)`,
-                lineHeight: 1.1,
+                fontSize: `clamp(1.25rem, ${previewSize / 16}rem, 3.5rem)`,
+                lineHeight: 1,
               }}
             >
               {previewText}
             </p>
           ) : live && !failed ? (
-            <div className="flex w-full items-center justify-center" aria-busy="true" aria-label={`Loading ${font.name}`}>
-              <span className="glyph-spin select-none font-display text-5xl leading-none text-fg">
+            <div className="flex h-full w-full items-center justify-center" aria-busy="true" aria-label={`Loading ${font.name}`}>
+              <span className="glyph-spin select-none font-display text-4xl leading-none">
                 {spinChar(previewText, font.slug)}
               </span>
             </div>
@@ -97,7 +104,7 @@ export function FontCard({
             <img
               src={`/api/preview-image/${font.slug}`}
               alt={`${font.name} specimen`}
-              className="preview-invert max-h-24 w-full object-contain object-left sm:max-h-28"
+              className="preview-invert max-h-full w-full object-contain object-left"
               loading="lazy"
             />
           ) : (

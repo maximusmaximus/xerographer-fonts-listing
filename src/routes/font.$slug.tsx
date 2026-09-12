@@ -22,8 +22,12 @@ function FontPage() {
   const search = Route.useSearch();
   const catalogText = useExplorer((s) => s.previewText);
   const catalogSize = useExplorer((s) => s.previewSize);
+  const catalogFg = useExplorer((s) => s.previewFg);
+  const catalogBg = useExplorer((s) => s.previewBg);
   const initialText = search.text || catalogText.trim() || undefined;
   const initialSize = search.size ?? (catalogText.trim() ? catalogSize : undefined);
+  const initialFg = search.fg ?? (catalogText.trim() ? catalogFg : undefined);
+  const initialBg = search.bg ?? (catalogText.trim() ? catalogBg : undefined);
 
   return (
     <PageShell>
@@ -34,8 +38,8 @@ function FontPage() {
           </Link>
           <span> / {font.category} / {font.subcategory}</span>
         </p>
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_320px]">
-          <div>
+        <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0">
             <h1 className="font-display text-4xl sm:text-6xl">{font.name}</h1>
             <p className="mt-2 font-mono text-sm text-fg-muted">
               {formatDownloads(font.totalDownloads)} downloads · {font.files} file{font.files === 1 ? "" : "s"}
@@ -43,11 +47,13 @@ function FontPage() {
             </p>
             <div className="mt-8">
               <FontPlayground
-                key={`${font.slug}:${initialText ?? ""}:${initialSize ?? ""}`}
+                key={`${font.slug}:${initialText ?? ""}:${initialSize ?? ""}:${initialFg ?? ""}:${initialBg ?? ""}`}
                 slug={font.slug}
                 name={font.name}
                 initialText={initialText}
                 initialSize={initialSize}
+                initialFg={initialFg}
+                initialBg={initialBg}
               />
             </div>
             <div className="mt-8">

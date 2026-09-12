@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { ColorField } from "@/components/color-field";
 import { FontCard } from "@/components/font-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +15,16 @@ export function CatalogExplorer() {
   const {
     previewText,
     previewSize,
+    previewFg,
+    previewBg,
     query,
     category,
     subcategory,
     sort,
     setPreviewText,
     setPreviewSize,
+    setPreviewFg,
+    setPreviewBg,
     setQuery,
     setCategory,
     setSort,
@@ -115,6 +120,10 @@ export function CatalogExplorer() {
                 suppressHydrationWarning
               />
             </label>
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <ColorField label="Background" value={previewBg} onChange={setPreviewBg} />
+              <ColorField label="Font" value={previewFg} onChange={setPreviewFg} />
+            </div>
             <Input
               value={query}
               placeholder="Search names"
@@ -133,7 +142,7 @@ export function CatalogExplorer() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-20 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="mx-auto grid min-w-0 max-w-7xl gap-8 overflow-x-hidden px-4 pb-20 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <p className="mb-3 text-xs uppercase tracking-[0.18em] text-fg-muted">Look by category</p>
           <div className="-mx-4 flex max-w-[100vw] gap-2 overflow-x-auto px-4 pb-2 lg:mx-0 lg:max-w-none lg:flex-col lg:overflow-visible lg:px-0">
@@ -167,7 +176,13 @@ export function CatalogExplorer() {
             ))}
           </div>
         </aside>
-        <FontGrid filter={filter} previewText={previewText} previewSize={previewSize} />
+        <FontGrid
+          filter={filter}
+          previewText={previewText}
+          previewSize={previewSize}
+          previewFg={previewFg}
+          previewBg={previewBg}
+        />
       </div>
     </div>
   );
@@ -210,10 +225,14 @@ function FontGrid({
   filter,
   previewText,
   previewSize,
+  previewFg,
+  previewBg,
 }: {
   filter: FontQuery;
   previewText: string;
   previewSize: number;
+  previewFg: string;
+  previewBg: string;
 }) {
   const fonts = useMemo(() => filterFonts(filter).map(withSources), [filter]);
   const [shown, setShown] = useState(PAGE);
@@ -224,7 +243,7 @@ function FontGrid({
 
   const visible = fonts.slice(0, shown);
   return (
-    <section>
+    <section className="min-w-0">
       <p className="mb-4 text-sm text-fg-muted">
         <span className="tabular-nums text-fg">{fonts.length.toLocaleString()}</span> faces
       </p>
@@ -235,7 +254,14 @@ function FontGrid({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((font) => (
-            <FontCard key={font.slug} font={font} previewText={previewText} previewSize={previewSize} />
+            <FontCard
+              key={font.slug}
+              font={font}
+              previewText={previewText}
+              previewSize={previewSize}
+              previewFg={previewFg}
+              previewBg={previewBg}
+            />
           ))}
         </div>
       )}
