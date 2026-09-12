@@ -1,8 +1,10 @@
 node_modules
 .vercel
-dist
+.tanstack
 .grok
+dist
 screenshots
 artifacts
 *.log
 .DS_Store
+.node_modules.lock

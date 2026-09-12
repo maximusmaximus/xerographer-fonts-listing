@@ -4,8 +4,6 @@ Catalog, live type tester, MCP service, and x402 commercial licensing for [Xerog
 
 1,376 original typefaces, pulled from DaFont. Personal use remains donationware. Unlimited commercial use is **US$45 USDC per font per agent**, settled with [x402](https://www.x402.org).
 
-Live app: this repo is the source for the Grok-hosted listing.
-
 ## Humans
 
 - Scroll the catalog or filter by DaFont category
@@ -30,7 +28,7 @@ MCP at `/api/mcp`. Discovery at `/.well-known/mcp.json` and `/llms.txt`.
 
 Optional `email` receives the PDF certificate. **maxinfeld@gmail.com always gets a copy.** Set `RESEND_API_KEY` (and optionally `RESEND_FROM`) so those messages actually send. The PDF is always available at `/api/licenses/:id/pdf`.
 
-Configure `X402_PAY_TO` (USDC address on Base), optional `X402_NETWORK` (`base` or `base-sepolia`), and `X402_FACILITATOR_URL`.
+Configure `X402_PAY_TO` (USDC address), optional `X402_NETWORK` (`base` or `base-sepolia`), and `X402_FACILITATOR_URL`.
 
 ## License grant (plain language)
 
