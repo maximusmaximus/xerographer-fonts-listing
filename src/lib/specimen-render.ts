@@ -1,4 +1,4 @@
-import opentype, { type Font } from "opentype.js";
+import { parse, type Font } from "opentype.js";
 import {
   applyCase,
   lineOriginX,
@@ -60,7 +60,7 @@ function pathsForString(
 }
 
 export function outlineSpecimen(buffer: ArrayBuffer, style: SpecimenStyle): string {
-  const font = opentype.parse(buffer);
+  const font = parse(buffer);
   const display = applyCase(style.text, style.caseMode) || " ";
   const measure = measureWithFont(font, style.fontSize, style.trackingPx);
   const box = Math.max(style.width - style.padX * 2, 1);

@@ -13,6 +13,4 @@ declare module "opentype.js" {
     charToGlyph(char: string): Glyph;
   }
   export function parse(input: ArrayBuffer | ArrayBufferView): Font;
-  const opentype: { parse: typeof parse };
-  export default opentype;
 }
