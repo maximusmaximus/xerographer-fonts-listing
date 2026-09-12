@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FontCard } from "@/components/font-card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { useExplorer } from "@/lib/store";
 import { formatDownloads, formatDownloadsLong } from "@/lib/utils";
 
 const PAGE = 36;
+const HERO_KEY = "xf-hero";
 
 export function CatalogExplorer() {
   const {
@@ -22,6 +24,20 @@ export function CatalogExplorer() {
     setCategory,
     setSort,
   } = useExplorer();
+  const [heroOpen, setHeroOpen] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem(HERO_KEY) === "hidden") setHeroOpen(false);
+  }, []);
+
+  function dismissHero() {
+    setHeroOpen(false);
+    try {
+      localStorage.setItem(HERO_KEY, "hidden");
+    } catch {
+      /* private mode */
+    }
+  }
 
   const tree = useMemo(() => categoryTree(), []);
   const filter: FontQuery = {
@@ -33,35 +49,49 @@ export function CatalogExplorer() {
 
   return (
     <div>
-      <section className="grain mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 sm:pt-16">
-        <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">Independent type foundry</p>
-        <h1 className="mt-3 max-w-3xl font-display text-4xl text-fg sm:text-6xl">
-          {formatDownloadsLong(STATS.downloads)} downloads.
-        </h1>
-        <p className="mt-4 max-w-xl text-fg-muted">
-          {STATS.count.toLocaleString()} original typefaces. Type a line — every face on screen will set it.
-        </p>
-        <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <HeroStat label="Typefaces" value={STATS.count.toLocaleString()} />
-          <HeroStat label="DaFont" value={formatDownloads(STATS.dafontDownloads)} />
-          <HeroStat label="FontSpace" value={formatDownloads(STATS.fontspaceDownloads)} />
-          <HeroStat label="WebFontFree" value={formatDownloads(STATS.webfontfreeDownloads)} />
-        </dl>
-        <p className="mt-4 text-xs text-fg-muted">
-          Also listed on{" "}
-          <a className="underline-offset-4 hover:underline" href="https://blogfonts.com/user/424.htm">
-            BlogFonts
-          </a>{" "}
-          ({STATS.hostCounts.blogfonts}) and{" "}
-          <a
-            className="underline-offset-4 hover:underline"
-            href="https://www.heyfonts.com/designer/max-infeld-xerographer-fonts/"
-          >
-            Hey Fonts
-          </a>{" "}
-          ({STATS.hostCounts.heyfonts}). Totals are summed across hosts.
-        </p>
-        <div className="mt-8 rounded-xl bg-bg-elevated p-3 shadow-[var(--shadow-border)] sm:p-4">
+      <section
+        className={`grain mx-auto max-w-7xl px-4 pb-8 sm:px-6 ${heroOpen ? "pt-10 sm:pt-16" : "pt-6 sm:pt-8"}`}
+      >
+        {heroOpen ? (
+          <div className="relative pr-12">
+            <button
+              type="button"
+              aria-label="Hide foundry intro"
+              onClick={dismissHero}
+              className="absolute right-0 top-0 flex size-11 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-subtle hover:text-fg"
+            >
+              <X className="size-4" />
+            </button>
+            <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">Independent type foundry</p>
+            <h1 className="mt-3 max-w-3xl font-display text-4xl text-fg sm:text-6xl">
+              {formatDownloadsLong(STATS.downloads)} downloads.
+            </h1>
+            <p className="mt-4 max-w-xl text-fg-muted">
+              {STATS.count.toLocaleString()} original typefaces. Type a line — every face on screen will set it.
+            </p>
+            <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <HeroStat label="Typefaces" value={STATS.count.toLocaleString()} />
+              <HeroStat label="DaFont" value={formatDownloads(STATS.dafontDownloads)} />
+              <HeroStat label="FontSpace" value={formatDownloads(STATS.fontspaceDownloads)} />
+              <HeroStat label="WebFontFree" value={formatDownloads(STATS.webfontfreeDownloads)} />
+            </dl>
+            <p className="mt-4 text-xs text-fg-muted">
+              Also listed on{" "}
+              <a className="underline-offset-4 hover:underline" href="https://blogfonts.com/user/424.htm">
+                BlogFonts
+              </a>{" "}
+              ({STATS.hostCounts.blogfonts}) and{" "}
+              <a
+                className="underline-offset-4 hover:underline"
+                href="https://www.heyfonts.com/designer/max-infeld-xerographer-fonts/"
+              >
+                Hey Fonts
+              </a>{" "}
+              ({STATS.hostCounts.heyfonts}). Totals are summed across hosts.
+            </p>
+          </div>
+        ) : null}
+        <div className={`${heroOpen ? "mt-8" : ""} rounded-xl bg-bg-elevated p-3 shadow-[var(--shadow-border)] sm:p-4`}>
           <label className="sr-only" htmlFor="tester">
             Preview text
           </label>
