@@ -1,0 +1,23 @@
+# Xerographer Fonts
+
+Independent type foundry by Max Infeld. 1,376 original typefaces, catalogued from DaFont.
+
+## For people
+- Browse and filter the catalog, or type custom text to test faces.
+- Personal use is donationware from DaFont.
+- About the designer: https://maxi.grok.me
+- Curio Cards: https://curio.cards
+- DaFont author: https://www.dafont.com/max-infeld.d3584
+
+## For agents
+MCP endpoint: /api/mcp
+Discovery: /.well-known/mcp.json
+
+Tools:
+- list_fonts, get_font, list_categories, preview_text
+- purchase_commercial_license (x402, US$45 USDC, unlimited commercial use, per font per agent)
+- get_license
+
+Payment: HTTP 402 with PAYMENT-REQUIRED. Retry with PAYMENT-SIGNATURE.
+Receipt: PAYMENT-RESPONSE plus PDF at /api/licenses/:id/pdf
+Optional `email` on purchase sends the PDF; maxinfeld@gmail.com always receives a copy.

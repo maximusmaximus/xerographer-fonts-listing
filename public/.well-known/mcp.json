@@ -1,0 +1,14 @@
+{
+  "name": "xerographer-fonts",
+  "description": "Xerographer Fonts catalog, live preview, and x402 commercial licensing.",
+  "mcp": {
+    "url": "/api/mcp",
+    "transport": "http"
+  },
+  "x402": {
+    "licenseUsd": 45,
+    "resource": "/api/licenses",
+    "asset": "USDC",
+    "network": "base"
+  }
+}
