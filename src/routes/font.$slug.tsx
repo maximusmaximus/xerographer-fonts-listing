@@ -1,8 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { PageShell } from "@/components/layout";
 import { LicensePanel } from "@/components/license-panel";
-import { Input } from "@/components/ui/input";
+import { FontPlayground } from "@/components/playground";
 import { getFont, withSources } from "@/lib/fonts";
 import { formatDownloads } from "@/lib/utils";
 
@@ -17,25 +16,6 @@ export const Route = createFileRoute("/font/$slug")({
 
 function FontPage() {
   const font = Route.useLoaderData();
-  const [text, setText] = useState(font.name);
-  const [size, setSize] = useState(72);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const face = new FontFace(`xf-${font.slug}`, `url(/api/font-file/${font.slug})`);
-    face
-      .load()
-      .then((loaded) => {
-        if (cancelled) return;
-        document.fonts.add(loaded);
-        setReady(true);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [font.slug]);
 
   return (
     <PageShell>
@@ -53,34 +33,8 @@ function FontPage() {
               {formatDownloads(font.totalDownloads)} downloads · {font.files} file{font.files === 1 ? "" : "s"}
               {font.size ? ` · ${font.size}` : ""}
             </p>
-            <div className="mt-8 rounded-xl bg-bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-6">
-              <Input value={text} onChange={(e) => setText(e.target.value)} aria-label="Preview text" />
-              <input
-                type="range"
-                min={28}
-                max={160}
-                value={size}
-                onChange={(e) => setSize(Number(e.target.value))}
-                className="mt-4 h-11 w-full accent-accent"
-                aria-label="Preview size"
-              />
-              <p
-                className="mt-6 break-words text-fg"
-                style={{
-                  fontFamily: ready ? `xf-${font.slug}, var(--font-display)` : "var(--font-display)",
-                  fontSize: `clamp(1.5rem, ${size / 16}rem, 7rem)`,
-                  lineHeight: 1.1,
-                }}
-              >
-                {text || "Type something"}
-              </p>
-              {!ready ? (
-                <img
-                  src={`/api/preview-image/${font.slug}`}
-                  alt=""
-                  className="preview-invert mt-6 max-h-28 w-full object-contain object-left"
-                />
-              ) : null}
+            <div className="mt-8">
+              <FontPlayground slug={font.slug} name={font.name} />
             </div>
             <div className="mt-8">
               <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Sources</h2>

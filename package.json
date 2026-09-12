@@ -16,7 +16,7 @@
     "preview:stop": "node scripts/preview.mjs stop",
     "typecheck": "tsc --noEmit",
     "check:auth": "node scripts/check-auth-invariant.mjs",
-    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/fonts.test.ts src/lib/x402.test.ts src/lib/mcp.test.ts",
+    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/fonts.test.ts src/lib/specimen.test.ts src/lib/x402.test.ts src/lib/mcp.test.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -59,6 +59,7 @@
     "jszip": "^3.10.2",
     "kysely": "^0.28.5",
     "lucide-react": "^0.510.0",
+    "opentype.js": "^2.0.0",
     "pdf-lib": "^1.17.1",
     "pg": "^8.16.3",
     "react": "^19.2.0",
