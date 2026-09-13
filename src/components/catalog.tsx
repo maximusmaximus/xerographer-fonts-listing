@@ -1,17 +1,20 @@
 import { X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { ColorField } from "@/components/color-field";
 import { FontCard } from "@/components/font-card";
+import { ShareComposition } from "@/components/share-composition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { categoryTree, filterFonts, STATS, withSources, type FontQuery } from "@/lib/fonts";
+import { compositionHref, serializeComposition, type FontSearch } from "@/lib/font-search";
 import { useExplorer } from "@/lib/store";
 import { formatDownloads, formatDownloadsLong } from "@/lib/utils";
 
 const PAGE = 36;
 const HERO_KEY = "xf-hero";
 
-export function CatalogExplorer() {
+export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
   const {
     previewText,
     previewSize,
@@ -30,10 +33,38 @@ export function CatalogExplorer() {
     setSort,
   } = useExplorer();
   const [heroOpen, setHeroOpen] = useState(true);
+  const navigate = useNavigate({ from: "/" });
+  const seeded = useRef(false);
 
   useEffect(() => {
     if (localStorage.getItem(HERO_KEY) === "hidden") setHeroOpen(false);
   }, []);
+
+  useEffect(() => {
+    if (seeded.current) return;
+    seeded.current = true;
+    if (!incoming?.text) return;
+    setPreviewText(incoming.text);
+    if (incoming.size) setPreviewSize(incoming.size);
+    if (incoming.fg) setPreviewFg(incoming.fg);
+    if (incoming.bg) setPreviewBg(incoming.bg);
+  }, [incoming, setPreviewBg, setPreviewFg, setPreviewSize, setPreviewText]);
+
+  useEffect(() => {
+    if (!seeded.current) return;
+    const handle = window.setTimeout(() => {
+      void navigate({
+        search: serializeComposition({
+          text: previewText,
+          size: previewSize,
+          fg: previewFg,
+          bg: previewBg,
+        }),
+        replace: true,
+      });
+    }, 200);
+    return () => window.clearTimeout(handle);
+  }, [navigate, previewBg, previewFg, previewSize, previewText]);
 
   function dismissHero() {
     setHeroOpen(false);
@@ -128,6 +159,15 @@ export function CatalogExplorer() {
               <div className="flex min-w-0 flex-wrap items-center gap-3">
                 <ColorField label="Background" value={previewBg} onChange={setPreviewBg} />
                 <ColorField label="Font" value={previewFg} onChange={setPreviewFg} />
+                <ShareComposition
+                  url={compositionHref("/", {
+                    text: previewText,
+                    size: previewSize,
+                    fg: previewFg,
+                    bg: previewBg,
+                  })}
+                  title={`${previewText.trim()} — Xerographer preview`}
+                />
               </div>
             ) : null}
             <Input

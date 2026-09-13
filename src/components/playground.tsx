@@ -11,9 +11,12 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { ColorField } from "@/components/color-field";
+import { ShareComposition } from "@/components/share-composition";
 import { Textarea } from "@/components/ui/input";
+import { compositionHref, serializeComposition } from "@/lib/font-search";
 import { applyCase, fileStem, LOOKS, SAMPLE_COPY, type Align, type CaseMode } from "@/lib/specimen.ts";
 import { downloadBlob, outlineSpecimen, rasterizeSpecimen, type SpecimenStyle } from "@/lib/specimen-render.ts";
 import { cn } from "@/lib/utils";
@@ -28,6 +31,10 @@ export function FontPlayground({
   initialSize,
   initialFg,
   initialBg,
+  initialAlign,
+  initialTrack,
+  initialLead,
+  initialCase,
 }: {
   slug: string;
   name: string;
@@ -35,18 +42,23 @@ export function FontPlayground({
   initialSize?: number;
   initialFg?: string;
   initialBg?: string;
+  initialAlign?: Align;
+  initialTrack?: number;
+  initialLead?: number;
+  initialCase?: CaseMode;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLParagraphElement>(null);
+  const navigate = useNavigate({ from: "/font/$slug" });
   const seededText = initialText?.trim() || name;
   const [text, setText] = useState(seededText);
   const [size, setSize] = useState(initialSize ?? 72);
   const [bg, setBg] = useState<string>(initialBg ?? DEFAULT_BG);
   const [fg, setFg] = useState<string>(initialFg ?? DEFAULT_FG);
-  const [align, setAlign] = useState<Align>("left");
-  const [tracking, setTracking] = useState(0);
-  const [leading, setLeading] = useState(1.15);
-  const [caseMode, setCaseMode] = useState<CaseMode>("none");
+  const [align, setAlign] = useState<Align>(initialAlign ?? "left");
+  const [tracking, setTracking] = useState(initialTrack ?? 0);
+  const [leading, setLeading] = useState(initialLead ?? 1.15);
+  const [caseMode, setCaseMode] = useState<CaseMode>(initialCase ?? "none");
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<"svg" | "jpg" | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -66,6 +78,28 @@ export function FontPlayground({
       cancelled = true;
     };
   }, [slug]);
+
+  const composition = {
+    text,
+    size,
+    fg,
+    bg,
+    align,
+    track: tracking,
+    lead: leading,
+    case: caseMode,
+  };
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      void navigate({
+        params: { slug },
+        search: serializeComposition(composition),
+        replace: true,
+      });
+    }, 200);
+    return () => window.clearTimeout(handle);
+  }, [align, bg, caseMode, fg, leading, navigate, size, slug, text, tracking]);
 
   function metrics(): SpecimenStyle {
     const stage = stageRef.current;
@@ -124,10 +158,10 @@ export function FontPlayground({
     setSize(initialSize ?? 72);
     setBg(initialBg ?? DEFAULT_BG);
     setFg(initialFg ?? DEFAULT_FG);
-    setAlign("left");
-    setTracking(0);
-    setLeading(1.15);
-    setCaseMode("none");
+    setAlign(initialAlign ?? "left");
+    setTracking(initialTrack ?? 0);
+    setLeading(initialLead ?? 1.15);
+    setCaseMode(initialCase ?? "none");
     setNote(null);
   }
 
@@ -254,6 +288,10 @@ export function FontPlayground({
           <RotateCcw className="size-4" />
           Reset
         </Button>
+        <ShareComposition
+          url={compositionHref(`/font/${slug}`, composition)}
+          title={`${name}: ${text.trim() || name}`}
+        />
         <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => void exportSvg()}>
           <Download className="size-4" />
           {busy === "svg" ? "Saving SVG…" : "Download SVG"}

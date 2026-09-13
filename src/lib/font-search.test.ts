@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { fontPreviewSearch, parseFontSearch } from "./font-search.ts";
+import { compositionHref, fontPreviewSearch, parseFontSearch, serializeComposition } from "./font-search.ts";
 
 describe("font preview search", () => {
   it("omits empty tester text", () => {
@@ -22,5 +22,40 @@ describe("font preview search", () => {
     assert.equal(parsed.size, 28);
     assert.equal(parsed.fg, "#aabbcc");
     assert.equal(parsed.bg, "#ddeeff");
+  });
+
+  it("parses playground composition and drops defaults", () => {
+    const parsed = parseFontSearch({
+      text: "Review this",
+      size: "72",
+      align: "center",
+      track: "0.12",
+      lead: "1.5",
+      case: "upper",
+    });
+    assert.deepEqual(parsed, {
+      text: "Review this",
+      size: 72,
+      align: "center",
+      track: 0.12,
+      lead: 1.5,
+      case: "upper",
+    });
+    assert.deepEqual(
+      serializeComposition({ text: "Review this", size: 72, align: "left", track: 0, lead: 1.15, case: "none" }),
+      { text: "Review this", size: 72 },
+    );
+  });
+
+  it("builds an absolute review link", () => {
+    const href = compositionHref(
+      "/font/funsized",
+      { text: "HELLO", size: 64, fg: "#ffcc00", bg: "#1a3a2a", align: "center" },
+      "https://fonts.example",
+    );
+    assert.equal(
+      href,
+      "https://fonts.example/font/funsized?text=HELLO&size=64&fg=%23ffcc00&bg=%231a3a2a&align=center",
+    );
   });
 });
