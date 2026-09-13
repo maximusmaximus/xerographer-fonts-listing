@@ -47,6 +47,18 @@ describe("font preview search", () => {
     );
   });
 
+  it("carries paper, ink, and texture on a share link", () => {
+    const href = compositionHref(
+      "/font/funsized",
+      { text: "HELLO", paper: "linear", ink: "radial", tx: "grain", ang: 40, fg2: "#aabbcc", bg2: "#112233" },
+      "https://fonts.example",
+    );
+    assert.match(href, /paper=linear/);
+    assert.match(href, /ink=radial/);
+    assert.match(href, /tx=grain/);
+    assert.match(href, /ang=40/);
+  });
+
   it("builds an absolute review link", () => {
     const href = compositionHref(
       "/font/funsized",

@@ -3,26 +3,41 @@ import {
   AlignJustify,
   AlignLeft,
   AlignRight,
-  ArrowLeftRight,
   CaseLower,
   CaseSensitive,
   CaseUpper,
   Download,
+  Dices,
   RotateCcw,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { ColorField } from "@/components/color-field";
+import { ColorWheel } from "@/components/color-wheel";
+import { Dial } from "@/components/dial";
 import { ShareComposition } from "@/components/share-composition";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { compositionHref, serializeComposition } from "@/lib/font-search";
-import { applyCase, fileStem, LOOKS, SAMPLE_COPY, type Align, type CaseMode } from "@/lib/specimen.ts";
+import { applyCase, fileStem, SAMPLE_COPY, type Align, type CaseMode } from "@/lib/specimen.ts";
 import { downloadBlob, outlineSpecimen, rasterizeSpecimen, type SpecimenStyle } from "@/lib/specimen-render.ts";
+import {
+  ATMOSPHERES,
+  INK_MODES,
+  PAPER_MODES,
+  TEXTURES,
+  inkCss,
+  paperBackground,
+  type Atmosphere,
+  type InkMode,
+  type PaperMode,
+  type TextureId,
+} from "@/lib/surfaces";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_BG = LOOKS[0].bg;
-const DEFAULT_FG = LOOKS[0].fg;
+const DEFAULT_BG = ATMOSPHERES[0]!.bg;
+const DEFAULT_FG = ATMOSPHERES[0]!.fg;
+
+type StudioTab = "paper" | "ink" | "type";
 
 export function FontPlayground({
   slug,
@@ -35,6 +50,12 @@ export function FontPlayground({
   initialTrack,
   initialLead,
   initialCase,
+  initialFg2,
+  initialBg2,
+  initialPaper,
+  initialInk,
+  initialTexture,
+  initialAngle,
 }: {
   slug: string;
   name: string;
@@ -46,6 +67,12 @@ export function FontPlayground({
   initialTrack?: number;
   initialLead?: number;
   initialCase?: CaseMode;
+  initialFg2?: string;
+  initialBg2?: string;
+  initialPaper?: PaperMode;
+  initialInk?: InkMode;
+  initialTexture?: TextureId;
+  initialAngle?: number;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLParagraphElement>(null);
@@ -54,14 +81,22 @@ export function FontPlayground({
   const [text, setText] = useState(seededText);
   const [size, setSize] = useState(initialSize ?? 72);
   const [bg, setBg] = useState<string>(initialBg ?? DEFAULT_BG);
+  const [bg2, setBg2] = useState<string>(initialBg2 ?? "#2a2722");
   const [fg, setFg] = useState<string>(initialFg ?? DEFAULT_FG);
+  const [fg2, setFg2] = useState<string>(initialFg2 ?? "#cfc6b4");
+  const [paper, setPaper] = useState<PaperMode>(initialPaper ?? "solid");
+  const [ink, setInk] = useState<InkMode>(initialInk ?? "solid");
+  const [texture, setTexture] = useState<TextureId>(initialTexture ?? "grain");
+  const [angle, setAngle] = useState(initialAngle ?? 160);
   const [align, setAlign] = useState<Align>(initialAlign ?? "left");
   const [tracking, setTracking] = useState(initialTrack ?? 0);
   const [leading, setLeading] = useState(initialLead ?? 1.15);
   const [caseMode, setCaseMode] = useState<CaseMode>(initialCase ?? "none");
+  const [tab, setTab] = useState<StudioTab>("paper");
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<"svg" | "jpg" | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,10 +119,16 @@ export function FontPlayground({
     size,
     fg,
     bg,
+    fg2,
+    bg2,
     align,
     track: tracking,
     lead: leading,
     case: caseMode,
+    paper,
+    ink,
+    tx: texture,
+    ang: angle,
   };
 
   useEffect(() => {
@@ -99,7 +140,7 @@ export function FontPlayground({
       });
     }, 200);
     return () => window.clearTimeout(handle);
-  }, [align, bg, caseMode, fg, leading, navigate, size, slug, text, tracking]);
+  }, [align, angle, bg, bg2, caseMode, fg, fg2, ink, leading, navigate, paper, size, slug, text, texture, tracking]);
 
   function metrics(): SpecimenStyle {
     const stage = stageRef.current;
@@ -120,7 +161,13 @@ export function FontPlayground({
       padX: stageCss ? parseFloat(stageCss.paddingLeft) || 32 : 32,
       padY: stageCss ? parseFloat(stageCss.paddingTop) || 32 : 32,
       bg,
+      bg2,
       fg,
+      fg2,
+      paper,
+      ink,
+      texture,
+      angle,
       fontFamily: `xf-${slug}, sans-serif`,
     };
   }
@@ -153,11 +200,39 @@ export function FontPlayground({
     }
   }
 
+  function stamp() {
+    setPulse(true);
+    window.setTimeout(() => setPulse(false), 280);
+  }
+
+  function applyAtmosphere(look: Atmosphere) {
+    setBg(look.bg);
+    setBg2(look.bg2);
+    setFg(look.fg);
+    setFg2(look.fg2);
+    setPaper(look.paper);
+    setInk(look.ink);
+    setTexture(look.texture);
+    setAngle(look.angle);
+    stamp();
+  }
+
+  function shuffle() {
+    const look = ATMOSPHERES[Math.floor(Math.random() * ATMOSPHERES.length)]!;
+    applyAtmosphere(look);
+  }
+
   function reset() {
     setText(seededText);
     setSize(initialSize ?? 72);
     setBg(initialBg ?? DEFAULT_BG);
+    setBg2(initialBg2 ?? "#2a2722");
     setFg(initialFg ?? DEFAULT_FG);
+    setFg2(initialFg2 ?? "#cfc6b4");
+    setPaper(initialPaper ?? "solid");
+    setInk(initialInk ?? "solid");
+    setTexture(initialTexture ?? "grain");
+    setAngle(initialAngle ?? 160);
     setAlign(initialAlign ?? "left");
     setTracking(initialTrack ?? 0);
     setLeading(initialLead ?? 1.15);
@@ -166,27 +241,29 @@ export function FontPlayground({
   }
 
   const display = applyCase(text, caseMode);
+  const paperCss = paperBackground(bg, bg2, paper, angle, texture);
+  const typeCss = inkCss(fg, fg2, ink, angle);
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl bg-bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-6">
+    <div className="min-w-0 overflow-x-hidden rounded-xl bg-bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-6">
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         aria-label="Preview text"
         rows={2}
-        placeholder="Type to proof this face…"
+        placeholder="Type a line. Watch it set."
         className="min-h-16 bg-bg-subtle"
       />
 
       <div
         ref={stageRef}
-        className="playground-stage mt-3 rounded-lg p-5 sm:p-8"
-        style={{ background: bg, color: fg }}
+        className={cn("playground-stage relative mt-3 overflow-hidden rounded-lg p-5 sm:p-8", pulse && "studio-stamp")}
+        style={paperCss as CSSProperties}
       >
         <p
           ref={copyRef}
           data-specimen
-          className="break-words"
+          className="relative break-words"
           style={{
             fontFamily: ready ? `xf-${slug}, var(--font-display)` : "var(--font-display)",
             fontSize: `clamp(1.5rem, ${size / 16}rem, 5.5rem)`,
@@ -195,94 +272,161 @@ export function FontPlayground({
             textAlign: align,
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
+            ...typeCss,
           }}
         >
           {display || "Type something"}
         </p>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <ToolGroup label="Align">
-          <Tool pressed={align === "left"} label="Align left" onClick={() => setAlign("left")}>
-            <AlignLeft className="size-4" />
-          </Tool>
-          <Tool pressed={align === "center"} label="Align center" onClick={() => setAlign("center")}>
-            <AlignCenter className="size-4" />
-          </Tool>
-          <Tool pressed={align === "right"} label="Align right" onClick={() => setAlign("right")}>
-            <AlignRight className="size-4" />
-          </Tool>
-          <Tool pressed={align === "justify"} label="Justify" onClick={() => setAlign("justify")}>
-            <AlignJustify className="size-4" />
-          </Tool>
-        </ToolGroup>
-        <ToolGroup label="Case">
-          <Tool pressed={caseMode === "none"} label="As typed" onClick={() => setCaseMode("none")}>
-            <CaseSensitive className="size-4" />
-          </Tool>
-          <Tool pressed={caseMode === "upper"} label="Uppercase" onClick={() => setCaseMode("upper")}>
-            <CaseUpper className="size-4" />
-          </Tool>
-          <Tool pressed={caseMode === "lower"} label="Lowercase" onClick={() => setCaseMode("lower")}>
-            <CaseLower className="size-4" />
-          </Tool>
-        </ToolGroup>
+      <div className="mt-4 flex gap-1 overflow-x-auto">
+        {(["paper", "ink", "type"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={cn(
+              "h-11 shrink-0 rounded-full px-4 text-sm capitalize transition-colors duration-150 ease-out",
+              tab === key ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg-muted hover:text-fg",
+            )}
+          >
+            {key === "paper" ? "Paper" : key === "ink" ? "Ink" : "Type"}
+          </button>
+        ))}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <ColorField label="Background" value={bg} onChange={setBg} />
-        <ColorField label="Font" value={fg} onChange={setFg} />
-        <ToolGroup label="Looks">
-          {LOOKS.map((look) => (
+      {tab === "paper" ? (
+        <div className="mt-4 space-y-4">
+          <ModeRow
+            options={PAPER_MODES}
+            value={paper}
+            onChange={setPaper}
+          />
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-8">
+            <ColorWheel label="Paper" value={bg} onChange={setBg} size={140} />
+            {paper !== "solid" ? <ColorWheel label="Wash" value={bg2} onChange={setBg2} size={140} /> : null}
+          </div>
+          {paper !== "solid" ? (
+            <RangeStrip label="Angle" min={0} max={360} step={1} value={angle} onChange={setAngle} display={`${angle}°`} />
+          ) : null}
+          <div>
+            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-fg-muted">Tooth</p>
+            <div className="flex flex-wrap gap-2">
+              {TEXTURES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-label={item.label}
+                  aria-pressed={texture === item.id}
+                  onClick={() => {
+                    setTexture(item.id);
+                    stamp();
+                  }}
+                  className={cn(
+                    "flex size-14 flex-col items-center justify-center rounded-full text-[10px] uppercase tracking-[0.12em] transition-transform duration-150 ease-out",
+                    texture === item.id ? "scale-105 shadow-[0_0_0_2px_var(--color-accent)]" : "shadow-[var(--shadow-border)]",
+                  )}
+                  style={paperBackground(bg, bg2, paper, angle, item.id) as CSSProperties}
+                >
+                  <span className="rounded-full bg-bg/70 px-1.5 text-fg">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {tab === "ink" ? (
+        <div className="mt-4 space-y-4">
+          <ModeRow options={INK_MODES} value={ink} onChange={setInk} />
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-8">
+            <ColorWheel label="Ink" value={fg} onChange={setFg} size={140} />
+            {ink !== "solid" ? <ColorWheel label="Fade" value={fg2} onChange={setFg2} size={140} /> : null}
+          </div>
+          {ink !== "solid" ? (
+            <RangeStrip label="Angle" min={0} max={360} step={1} value={angle} onChange={setAngle} display={`${angle}°`} />
+          ) : null}
+        </div>
+      ) : null}
+
+      {tab === "type" ? (
+        <div className="mt-4 space-y-4">
+          <div className="flex flex-wrap justify-center gap-6">
+            <Dial label="Size" min={28} max={160} step={1} value={size} onChange={setSize} display={`${size}`} />
+            <Dial
+              label="Track"
+              min={-0.08}
+              max={0.28}
+              step={0.01}
+              value={tracking}
+              onChange={setTracking}
+              display={tracking.toFixed(2)}
+            />
+            <Dial
+              label="Lead"
+              min={0.9}
+              max={2}
+              step={0.05}
+              value={leading}
+              onChange={setLeading}
+              display={leading.toFixed(2)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <ToolGroup label="Align">
+              <Tool pressed={align === "left"} label="Align left" onClick={() => setAlign("left")}>
+                <AlignLeft className="size-4" />
+              </Tool>
+              <Tool pressed={align === "center"} label="Align center" onClick={() => setAlign("center")}>
+                <AlignCenter className="size-4" />
+              </Tool>
+              <Tool pressed={align === "right"} label="Align right" onClick={() => setAlign("right")}>
+                <AlignRight className="size-4" />
+              </Tool>
+              <Tool pressed={align === "justify"} label="Justify" onClick={() => setAlign("justify")}>
+                <AlignJustify className="size-4" />
+              </Tool>
+            </ToolGroup>
+            <ToolGroup label="Case">
+              <Tool pressed={caseMode === "none"} label="As typed" onClick={() => setCaseMode("none")}>
+                <CaseSensitive className="size-4" />
+              </Tool>
+              <Tool pressed={caseMode === "upper"} label="Uppercase" onClick={() => setCaseMode("upper")}>
+                <CaseUpper className="size-4" />
+              </Tool>
+              <Tool pressed={caseMode === "lower"} label="Lowercase" onClick={() => setCaseMode("lower")}>
+                <CaseLower className="size-4" />
+              </Tool>
+            </ToolGroup>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-5">
+        <p className="mb-2 text-xs uppercase tracking-[0.16em] text-fg-muted">Atmospheres</p>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {ATMOSPHERES.map((look) => (
             <button
-              key={look.name}
+              key={look.id}
               type="button"
               aria-label={look.name}
-              onClick={() => {
-                setBg(look.bg);
-                setFg(look.fg);
-              }}
-              className={cn(
-                "size-11 rounded-sm shadow-[var(--shadow-border)]",
-                bg === look.bg && fg === look.fg ? "outline-2 outline-offset-2 outline-accent" : "",
-              )}
-              style={{ background: look.bg }}
+              onClick={() => applyAtmosphere(look)}
+              className="flex size-14 shrink-0 items-end justify-center rounded-full pb-1 text-[10px] uppercase tracking-[0.12em] text-fg transition-transform duration-150 ease-out hover:scale-105"
+              style={paperBackground(look.bg, look.bg2, look.paper, look.angle, look.texture) as CSSProperties}
             >
-              <span className="mx-auto block h-3 w-5 rounded-full" style={{ background: look.fg }} />
+              <span className="rounded-full bg-bg/70 px-1.5">{look.name}</span>
             </button>
           ))}
-        </ToolGroup>
-        <Button type="button" variant="secondary" size="sm" onClick={() => { const next = bg; setBg(fg); setFg(next); }}>
-          <ArrowLeftRight className="size-4" />
-          Swap
-        </Button>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <RangeField label="Size" min={28} max={160} step={1} value={size} onChange={setSize} display={`${size}`} />
-        <RangeField
-          label="Track"
-          min={-0.08}
-          max={0.28}
-          step={0.01}
-          value={tracking}
-          onChange={setTracking}
-          display={tracking.toFixed(2)}
-        />
-        <RangeField
-          label="Lead"
-          min={0.9}
-          max={2}
-          step={0.05}
-          value={leading}
-          onChange={setLeading}
-          display={leading.toFixed(2)}
-        />
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Button type="button" variant="secondary" size="sm" onClick={() => setText(SAMPLE_COPY)}>
           Sample copy
+        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={shuffle}>
+          <Dices className="size-4" />
+          Shuffle
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={reset}>
           <RotateCcw className="size-4" />
@@ -302,6 +446,34 @@ export function FontPlayground({
         </Button>
       </div>
       {note ? <p className="mt-3 text-sm text-fg-muted">{note}</p> : null}
+    </div>
+  );
+}
+
+function ModeRow<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          onClick={() => onChange(option.id)}
+          className={cn(
+            "h-11 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
+            value === option.id ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg-muted hover:text-fg",
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -333,7 +505,7 @@ function Tool({
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "inline-flex size-11 items-center justify-center rounded-sm transition-colors duration-150 ease-out",
+        "inline-flex size-11 items-center justify-center rounded-full transition-colors duration-150 ease-out",
         pressed ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg hover:bg-bg-elevated",
       )}
     >
@@ -342,7 +514,7 @@ function Tool({
   );
 }
 
-function RangeField({
+function RangeStrip({
   label,
   min,
   max,

@@ -47,7 +47,7 @@ function FontPage() {
             </p>
             <div className="mt-8">
               <FontPlayground
-                key={`${font.slug}:${initialText ?? ""}:${initialSize ?? ""}:${initialFg ?? ""}:${initialBg ?? ""}:${search.align ?? ""}:${search.track ?? ""}:${search.lead ?? ""}:${search.case ?? ""}`}
+                key={`${font.slug}:${initialText ?? ""}:${initialSize ?? ""}:${initialFg ?? ""}:${initialBg ?? ""}:${search.align ?? ""}:${search.track ?? ""}:${search.lead ?? ""}:${search.case ?? ""}:${search.paper ?? ""}:${search.ink ?? ""}:${search.tx ?? ""}`}
                 slug={font.slug}
                 name={font.name}
                 initialText={initialText}
@@ -58,6 +58,12 @@ function FontPage() {
                 initialTrack={search.track}
                 initialLead={search.lead}
                 initialCase={search.case}
+                initialFg2={search.fg2}
+                initialBg2={search.bg2}
+                initialPaper={search.paper}
+                initialInk={search.ink}
+                initialTexture={search.tx}
+                initialAngle={search.ang}
               />
             </div>
             <div className="mt-8">

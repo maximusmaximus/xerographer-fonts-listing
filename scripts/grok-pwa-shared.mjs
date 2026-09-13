@@ -333,7 +333,7 @@ function applyCustomCardFromFs(site, cwd) {
   return { ...site, card: "custom", image: disk };
 }
 
-const COMPOSITION_KEYS = ["text", "size", "fg", "bg", "align", "track", "lead", "case"];
+const COMPOSITION_KEYS = ["text", "size", "fg", "bg", "fg2", "bg2", "align", "track", "lead", "case", "paper", "ink", "tx", "ang"];
 
 export function compositionOgAsset(requestUrl = "") {
   const raw = String(requestUrl ?? "");

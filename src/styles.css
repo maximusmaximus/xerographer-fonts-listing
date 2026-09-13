@@ -114,16 +114,21 @@ html:not(.dark) {
 }
 
 .playground-stage {
-  height: 14rem;
+  height: 16rem;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   contain: layout paint;
+  transition: transform 180ms ease-out;
 }
 @media (min-width: 640px) {
   .playground-stage {
-    height: 18rem;
+    height: 20rem;
   }
+}
+
+.studio-stamp {
+  transform: scale(0.985);
 }
 
 input[type="color"] {
@@ -131,6 +136,21 @@ input[type="color"] {
   border: 0;
   padding: 0;
   background: transparent;
+}
+
+.color-wheel-bright,
+label:has(canvas) input[type="range"] {
+  appearance: none;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+label:has(canvas) input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
 .preview-invert {

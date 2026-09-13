@@ -70,12 +70,13 @@ export function wordGap(words: string[], boxWidth: number, measure: (value: stri
   return (boxWidth - total) / (words.length - 1);
 }
 
-export function specimenSvg(width: number, height: number, bg: string, fill: string, pathData: string[]): string {
+export function specimenSvg(width: number, height: number, bg: string, fill: string, pathData: string[], defs = ""): string {
   const paths = pathData
     .filter(Boolean)
     .map((d) => `<path d="${d}" fill="${fill}"/>`)
     .join("");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(width)}" height="${Math.round(height)}" viewBox="0 0 ${width} ${height}">\n<rect width="100%" height="100%" fill="${bg}"/>\n${paths}\n</svg>\n`;
+  const extra = defs ? `<defs>${defs}</defs>` : "";
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(width)}" height="${Math.round(height)}" viewBox="0 0 ${width} ${height}">\n${extra}<rect width="100%" height="100%" fill="${bg}"/>\n${paths}\n</svg>\n`;
 }
 
 export function fileStem(slug: string): string {

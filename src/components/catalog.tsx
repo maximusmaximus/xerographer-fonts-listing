@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ColorField } from "@/components/color-field";
+import { ColorWheel } from "@/components/color-wheel";
 import { FontCard } from "@/components/font-card";
 import { ShareComposition } from "@/components/share-composition";
 import { Button } from "@/components/ui/button";
@@ -156,9 +156,9 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
               </label>
             ) : null}
             {live ? (
-              <div className="flex min-w-0 flex-wrap items-center gap-3">
-                <ColorField label="Background" value={previewBg} onChange={setPreviewBg} />
-                <ColorField label="Font" value={previewFg} onChange={setPreviewFg} />
+              <div className="flex min-w-0 flex-wrap items-end gap-4">
+                <ColorWheel label="Paper" value={previewBg} onChange={setPreviewBg} size={104} />
+                <ColorWheel label="Ink" value={previewFg} onChange={setPreviewFg} size={104} />
                 <ShareComposition
                   url={compositionHref("/", {
                     text: previewText,
