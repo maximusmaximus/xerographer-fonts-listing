@@ -333,20 +333,60 @@ function applyCustomCardFromFs(site, cwd) {
   return { ...site, card: "custom", image: disk };
 }
 
+const COMPOSITION_KEYS = ["text", "size", "fg", "bg", "align", "track", "lead", "case"];
+
+export function compositionOgAsset(requestUrl = "") {
+  const raw = String(requestUrl ?? "");
+  const hash = raw.indexOf("#");
+  const clipped = hash === -1 ? raw : raw.slice(0, hash);
+  const qIndex = clipped.indexOf("?");
+  const path = qIndex === -1 ? clipped : clipped.slice(0, qIndex);
+  const query = qIndex === -1 ? "" : clipped.slice(qIndex + 1);
+  const params = new URLSearchParams(query);
+  const text = (params.get("text") ?? "").trim();
+  if (!text) return "";
+  const out = new URLSearchParams();
+  out.set("text", text);
+  for (const key of COMPOSITION_KEYS) {
+    if (key === "text") continue;
+    const value = params.get(key);
+    if (value) out.set(key, value);
+  }
+  const font = path.match(/\/font\/([^/?#]+)/);
+  if (font?.[1]) out.set("slug", decodeURIComponent(font[1]));
+  return `/api/og-composition?${out.toString()}`;
+}
+
+export function compositionOgTitle(requestUrl = "") {
+  const raw = String(requestUrl ?? "");
+  const qIndex = raw.indexOf("?");
+  if (qIndex === -1) return "";
+  const params = new URLSearchParams(raw.slice(qIndex + 1));
+  const text = (params.get("text") ?? "").trim().replace(/\s+/g, " ");
+  if (!text) return "";
+  const clipped = text.length > 72 ? `${text.slice(0, 69)}…` : text;
+  return `${clipped} — Xerographer Fonts`;
+}
+
 export function grokOgHeadTags({
   host = "",
   appName = DEFAULT_APP_NAME,
   site = {},
   documentTitle = "",
   cwd = process.cwd(),
+  url = "",
 } = {}) {
-  const title = resolveOgTitle(site, appName, host, documentTitle);
+  const composition = compositionOgAsset(url);
+  const compositionTitle = compositionOgTitle(url);
+  const title = compositionTitle || resolveOgTitle(site, appName, host, documentTitle);
   const publicHost = resolvePublicHost(host);
   const tags = [
     `<meta name="twitter:card" content="summary_large_image">`,
     `<meta property="og:title" content="${escapeHtml(title)}">`,
   ];
-  const description = String(site.description ?? "").trim();
+  const description = compositionTitle
+    ? "A Xerographer Fonts composition — open the link to review the specimen."
+    : String(site.description ?? "").trim();
   if (description) {
     tags.push(`<meta property="og:description" content="${escapeHtml(description)}">`);
   }
@@ -354,16 +394,17 @@ export function grokOgHeadTags({
     tags.push(`<meta property="og:type" content="x:game">`);
   }
   if (publicHost) {
-    const asset = resolveOgCardAsset(site, cwd);
+    const asset = composition || resolveOgCardAsset(site, cwd);
     const custom = Boolean(asset);
     let image = custom
       ? `https://${publicHost}${asset.startsWith("/") ? asset : `/${asset}`}`
       : `${ogServiceUrl()}/v1/card.png?host=${encodeURIComponent(publicHost)}&title=${encodeURIComponent(title)}`;
-    const color = !custom ? placeholderCardColor(site) : "";
+    const color = !custom && !composition ? placeholderCardColor(site) : "";
     if (color) image += `&color=${encodeURIComponent(color)}`;
     tags.push(`<meta property="og:image" content="${escapeHtml(image)}">`);
     tags.push(`<meta property="og:image:width" content="1200">`);
     tags.push(`<meta property="og:image:height" content="630">`);
+    tags.push(`<meta name="twitter:image" content="${escapeHtml(image)}">`);
     const banner = String(site.banner ?? "").trim();
     if (banner) {
       const bannerUrl = `https://${publicHost}${banner.startsWith("/") ? banner : `/${banner}`}`;
@@ -444,7 +485,7 @@ export function injectGrokPwaHead(html, ctx = {}) {
 
   next = insertAfterHeadOpen(
     next,
-    grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
+    grokOgHeadTags({ host, appName, site, documentTitle, cwd, url: ctx.url ?? "" }).join(""),
   );
 
   if (!next.includes("/grok-app-builder/extensions.js")) {
@@ -498,6 +539,7 @@ export function createHeadInjector(ctx = {}) {
       host: normalized.host,
       cwd: normalized.cwd,
       site: normalized.site,
+      url: ctx.url ?? "",
     });
 
   return {

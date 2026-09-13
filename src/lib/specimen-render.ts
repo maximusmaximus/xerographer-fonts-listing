@@ -1,4 +1,4 @@
-import { parse, type Font } from "opentype.js";
+import * as OpenType from "opentype.js";
 import {
   applyCase,
   lineOriginX,
@@ -9,6 +9,12 @@ import {
   type Align,
   type CaseMode,
 } from "./specimen.ts";
+
+type Font = OpenType.Font;
+const parse: typeof OpenType.parse =
+  typeof OpenType.parse === "function"
+    ? OpenType.parse
+    : (OpenType as unknown as { default: { parse: typeof OpenType.parse } }).default.parse;
 
 export type SpecimenStyle = {
   text: string;
@@ -59,7 +65,10 @@ function pathsForString(
   return { paths, width: cursor - x };
 }
 
-export function outlineSpecimen(buffer: ArrayBuffer, style: SpecimenStyle): string {
+export function outlineGlyphs(
+  buffer: ArrayBuffer,
+  style: SpecimenStyle,
+): { width: number; height: number; paths: string[]; bg: string; fg: string } {
   const font = parse(buffer);
   const display = applyCase(style.text, style.caseMode) || " ";
   const measure = measureWithFont(font, style.fontSize, style.trackingPx);
@@ -87,8 +96,16 @@ export function outlineSpecimen(buffer: ArrayBuffer, style: SpecimenStyle): stri
     }
     y += style.lineHeight;
   }
-  const height = Math.max(y + Math.abs(font.descender / font.unitsPerEm) * style.fontSize + style.padY, style.padY * 2 + style.lineHeight);
-  return specimenSvg(style.width, height, style.bg, style.fg, paths);
+  const height = Math.max(
+    y + Math.abs(font.descender / font.unitsPerEm) * style.fontSize + style.padY,
+    style.padY * 2 + style.lineHeight,
+  );
+  return { width: style.width, height, paths, bg: style.bg, fg: style.fg };
+}
+
+export function outlineSpecimen(buffer: ArrayBuffer, style: SpecimenStyle): string {
+  const laid = outlineGlyphs(buffer, style);
+  return specimenSvg(laid.width, laid.height, laid.bg, laid.fg, laid.paths);
 }
 
 function setLetterSpacing(ctx: CanvasRenderingContext2D, trackingPx: number) {

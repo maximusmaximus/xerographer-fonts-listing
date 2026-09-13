@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   appNameFromHost,
+  compositionOgAsset,
+  compositionOgTitle,
   createHeadInjector,
   grokXCreatorHeadTags,
   injectGrokPwaHead,
@@ -424,6 +426,30 @@ test("streaming injector falls back when no </head> is seen", () => {
   assert.deepEqual(injector.push("<html><head>"), []);
   const out = Buffer.concat(injector.flush()).toString("utf8");
   assert.match(out, /rel="manifest"/);
+});
+
+test("composition share URLs point og:image at the specimen card", () => {
+  assert.equal(
+    compositionOgAsset("/font/funsized?text=HELLO+REVIEW&fg=%23ffcc00&bg=%231a3a2a&align=center"),
+    "/api/og-composition?text=HELLO+REVIEW&fg=%23ffcc00&bg=%231a3a2a&align=center&slug=funsized",
+  );
+  assert.equal(compositionOgTitle("/?text=HELLO+REVIEW"), "HELLO REVIEW — Xerographer Fonts");
+  assert.equal(compositionOgAsset("/"), "");
+
+  const empty = mkdtempSync(join(tmpdir(), "grok-og-comp-"));
+  const out = injectGrokPwaHead("<html><head></head></html>", {
+    host: "wild-race.grok.me",
+    cwd: empty,
+    site: { title: "Xerographer Fonts", card: "custom" },
+    url: "/font/funsized?text=HELLO+REVIEW&fg=%23ffcc00",
+  });
+  assert.match(
+    out,
+    /property="og:image" content="https:\/\/wild-race\.grok\.me\/api\/og-composition\?text=HELLO\+REVIEW/,
+  );
+  assert.match(out, /slug=funsized/);
+  assert.match(out, /property="og:title" content="HELLO REVIEW — Xerographer Fonts"/);
+  assert.doesNotMatch(out, /\/og\.jpg"/);
 });
 
 test("detects install query", () => {

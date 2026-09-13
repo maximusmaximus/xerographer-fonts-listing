@@ -254,6 +254,12 @@ export function pickHeaderFont(): FontRecord {
   return pool[Math.floor(Math.random() * pool.length)] ?? catalog[0]!;
 }
 
+export function popularTextFaces(limit = 4): FontRecord[] {
+  return filterFonts({ sort: "popular" })
+    .filter((font) => font.category !== "Dingbats")
+    .slice(0, Math.max(1, limit));
+}
+
 export const STATS = {
   count: catalog.length,
   dafontDownloads: listingData.totals.dafont,

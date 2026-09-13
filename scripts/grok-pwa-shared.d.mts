@@ -40,6 +40,7 @@ export type GrokHeadContext = {
   host?: string | null;
   cwd?: string;
   site?: OgSite;
+  url?: string;
 };
 
 export declare function readOgSite(cwd?: string): OgSite;
@@ -62,7 +63,10 @@ export declare function grokOgHeadTags(ctx?: {
   site?: OgSite;
   documentTitle?: string;
   cwd?: string;
+  url?: string;
 }): string[];
+export declare function compositionOgAsset(requestUrl?: string): string;
+export declare function compositionOgTitle(requestUrl?: string): string;
 export declare function stripShareMetaTags(html: string): string;
 export declare function normalizeHeadContext(ctx?: GrokHeadContext): {
   appName: string;
