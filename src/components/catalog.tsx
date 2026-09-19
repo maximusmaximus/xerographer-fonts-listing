@@ -3,11 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ColorWheel } from "@/components/color-wheel";
 import { FontCard } from "@/components/font-card";
+import { HintSpot } from "@/components/guide";
 import { ShareComposition } from "@/components/share-composition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { categoryTree, filterFonts, STATS, withSources, type FontQuery } from "@/lib/fonts";
-import { compositionHref, serializeComposition, type FontSearch } from "@/lib/font-search";
+import { compositionHref, compositionOgHref, serializeComposition, type FontSearch } from "@/lib/font-search";
 import { useExplorer } from "@/lib/store";
 import { formatDownloads, formatDownloadsLong } from "@/lib/utils";
 
@@ -129,36 +130,46 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
           </div>
         ) : null}
         <div className={`${heroOpen ? "mt-8" : ""} rounded-xl bg-bg-elevated p-3 shadow-[var(--shadow-border)] sm:p-4`}>
-          <label className="sr-only" htmlFor="tester">
-            Preview text
-          </label>
-          <Input
-            id="tester"
-            value={previewText}
-            placeholder="Type to test any face…"
-            onChange={(e) => setPreviewText(e.target.value)}
-            className="h-14 border-0 bg-transparent text-lg shadow-none sm:text-xl"
-          />
+          <HintSpot id="tester">
+            <label className="sr-only" htmlFor="tester">
+              Preview text
+            </label>
+            <Input
+              id="tester"
+              value={previewText}
+              placeholder="Type to test any face…"
+              onChange={(e) => setPreviewText(e.target.value)}
+              className="h-14 border-0 bg-transparent text-lg shadow-none sm:text-xl"
+            />
+          </HintSpot>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
             {live ? (
-              <label className="flex flex-1 items-center gap-3 text-xs uppercase tracking-[0.16em] text-fg-muted">
-                Size
-                <input
-                  type="range"
-                  min={28}
-                  max={120}
-                  value={previewSize}
-                  onChange={(e) => setPreviewSize(Number(e.target.value))}
-                  className="h-11 w-full min-w-0 accent-accent"
-                  aria-label="Preview size"
-                  suppressHydrationWarning
-                />
-              </label>
+              <HintSpot id="size" className="flex-1">
+                <label className="flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-fg-muted">
+                  Size
+                  <input
+                    type="range"
+                    min={28}
+                    max={120}
+                    value={previewSize}
+                    onChange={(e) => setPreviewSize(Number(e.target.value))}
+                    className="h-11 w-full min-w-0 accent-accent"
+                    aria-label="Preview size"
+                    suppressHydrationWarning
+                  />
+                </label>
+              </HintSpot>
             ) : null}
             {live ? (
-              <div className="flex min-w-0 flex-wrap items-end gap-4">
-                <ColorWheel label="Paper" value={previewBg} onChange={setPreviewBg} size={104} />
-                <ColorWheel label="Ink" value={previewFg} onChange={setPreviewFg} size={104} />
+              <HintSpot id="colors">
+                <div className="flex min-w-0 flex-wrap items-end gap-4">
+                  <ColorWheel label="Paper" value={previewBg} onChange={setPreviewBg} size={104} />
+                  <ColorWheel label="Ink" value={previewFg} onChange={setPreviewFg} size={104} />
+                </div>
+              </HintSpot>
+            ) : null}
+            {live ? (
+              <HintSpot id="share">
                 <ShareComposition
                   url={compositionHref("/", {
                     text: previewText,
@@ -166,17 +177,28 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
                     fg: previewFg,
                     bg: previewBg,
                   })}
+                  ogUrl={compositionOgHref("/", {
+                    text: previewText,
+                    size: previewSize,
+                    fg: previewFg,
+                    bg: previewBg,
+                  })}
                   title={`${previewText.trim()} — Xerographer preview`}
                 />
-              </div>
-            ) : null}
-            <Input
-              value={query}
-              placeholder="Search names"
-              onChange={(e) => setQuery(e.target.value)}
-              className="sm:max-w-xs"
-              aria-label="Search fonts"
-            />
+              </HintSpot>
+            ) : (
+              <HintSpot id="share">
+                <ShareComposition url="" title="Xerographer preview" disabled />
+              </HintSpot>
+            )}
+            <HintSpot id="search" className="sm:max-w-xs sm:flex-1">
+              <Input
+                value={query}
+                placeholder="Search names"
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search fonts"
+              />
+            </HintSpot>
           </div>
           <div className="mt-3 flex gap-2 overflow-x-auto lg:hidden">
             {(["popular", "name", "recent"] as const).map((key) => (
@@ -190,7 +212,8 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
 
       <div className="mx-auto grid min-w-0 max-w-7xl gap-8 overflow-x-hidden px-4 pb-20 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <p className="mb-3 text-xs uppercase tracking-[0.18em] text-fg-muted">Look by category</p>
+          <HintSpot id="categories">
+            <p className="mb-3 text-xs uppercase tracking-[0.18em] text-fg-muted">Look by category</p>
           <div className="-mx-4 flex max-w-[100vw] gap-2 overflow-x-auto px-4 pb-2 lg:mx-0 lg:max-w-none lg:flex-col lg:overflow-visible lg:px-0">
             <CategoryChip label={`All (${STATS.count})`} active={!category} onClick={() => setCategory(null)} />
             {tree.map((group) => (
@@ -214,6 +237,7 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
               </div>
             ))}
           </div>
+          </HintSpot>
           <div className="mt-4 hidden gap-2 lg:flex">
             {(["popular", "name", "recent"] as const).map((key) => (
               <Button key={key} size="sm" variant={sort === key ? "primary" : "secondary"} onClick={() => setSort(key)}>
@@ -222,6 +246,7 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
             ))}
           </div>
         </aside>
+        <HintSpot id="cards">
         <FontGrid
           filter={filter}
           previewText={previewText}
@@ -229,6 +254,7 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
           previewFg={previewFg}
           previewBg={previewBg}
         />
+        </HintSpot>
       </div>
     </div>
   );

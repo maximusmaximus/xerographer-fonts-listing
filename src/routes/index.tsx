@@ -5,6 +5,12 @@ import { parseFontSearch } from "@/lib/font-search";
 
 export const Route = createFileRoute("/")({
   validateSearch: parseFontSearch,
+  head: ({ match }) => {
+    const text = match.search.text?.trim();
+    return {
+      meta: [{ title: text ? `${text} — Xerographer Fonts` : "Xerographer Fonts" }],
+    };
+  },
   component: Home,
 });
 

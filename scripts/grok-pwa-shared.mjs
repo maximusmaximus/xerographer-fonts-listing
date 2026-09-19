@@ -151,6 +151,52 @@ export function stripInstallParams(url) {
   return rest ? `${path}?${rest}` : path;
 }
 
+function requestPathAndQuery(url = "") {
+  const raw = String(url ?? "");
+  try {
+    if (/^https?:/i.test(raw)) {
+      const parsed = new URL(raw);
+      return { pathname: parsed.pathname, search: parsed.search.startsWith("?") ? parsed.search.slice(1) : parsed.search };
+    }
+  } catch {
+    /* fall through */
+  }
+  const cut = raw.indexOf("?");
+  return {
+    pathname: cut === -1 ? raw || "/" : raw.slice(0, cut) || "/",
+    search: cut === -1 ? "" : raw.slice(cut + 1),
+  };
+}
+
+/** Path of a generated composition card, or "" when the URL has no specimen text. */
+export function compositionOgAsset(url = "") {
+  const { pathname, search } = requestPathAndQuery(url);
+  const params = new URLSearchParams(search);
+  const text = (params.get("text") ?? "").trim();
+  if (!text) return "";
+  const slugMatch = pathname.match(/^\/font\/([^/?#]+)/i);
+  if (slugMatch) params.set("slug", decodeURIComponent(slugMatch[1]));
+  return `/api/og-composition?${params.toString()}`;
+}
+
+export function compositionOgTitle(url = "") {
+  const { search } = requestPathAndQuery(url);
+  const text = (new URLSearchParams(search).get("text") ?? "").trim();
+  if (!text) return "";
+  return `${text} — Xerographer Fonts`;
+}
+
+export function compositionOgDescription(url = "") {
+  const { pathname, search } = requestPathAndQuery(url);
+  const text = (new URLSearchParams(search).get("text") ?? "").trim();
+  if (!text) return "";
+  const slugMatch = pathname.match(/^\/font\/([^/?#]+)/i);
+  if (slugMatch) {
+    return `A live specimen set in ${decodeURIComponent(slugMatch[1]).replace(/-/g, " ")}. Open the link to keep editing.`;
+  }
+  return "A live Xerographer specimen. Open the link to keep editing the type.";
+}
+
 export function renderInstallPageHtml(template, { host, url } = {}) {
   return String(template)
     .replaceAll("{{APP_NAME}}", escapeHtml(appNameFromHost(host)))
@@ -333,41 +379,6 @@ function applyCustomCardFromFs(site, cwd) {
   return { ...site, card: "custom", image: disk };
 }
 
-const COMPOSITION_KEYS = ["text", "size", "fg", "bg", "fg2", "bg2", "align", "track", "lead", "case", "paper", "ink", "tx", "ang"];
-
-export function compositionOgAsset(requestUrl = "") {
-  const raw = String(requestUrl ?? "");
-  const hash = raw.indexOf("#");
-  const clipped = hash === -1 ? raw : raw.slice(0, hash);
-  const qIndex = clipped.indexOf("?");
-  const path = qIndex === -1 ? clipped : clipped.slice(0, qIndex);
-  const query = qIndex === -1 ? "" : clipped.slice(qIndex + 1);
-  const params = new URLSearchParams(query);
-  const text = (params.get("text") ?? "").trim();
-  if (!text) return "";
-  const out = new URLSearchParams();
-  out.set("text", text);
-  for (const key of COMPOSITION_KEYS) {
-    if (key === "text") continue;
-    const value = params.get(key);
-    if (value) out.set(key, value);
-  }
-  const font = path.match(/\/font\/([^/?#]+)/);
-  if (font?.[1]) out.set("slug", decodeURIComponent(font[1]));
-  return `/api/og-composition?${out.toString()}`;
-}
-
-export function compositionOgTitle(requestUrl = "") {
-  const raw = String(requestUrl ?? "");
-  const qIndex = raw.indexOf("?");
-  if (qIndex === -1) return "";
-  const params = new URLSearchParams(raw.slice(qIndex + 1));
-  const text = (params.get("text") ?? "").trim().replace(/\s+/g, " ");
-  if (!text) return "";
-  const clipped = text.length > 72 ? `${text.slice(0, 69)}…` : text;
-  return `${clipped} — Xerographer Fonts`;
-}
-
 export function grokOgHeadTags({
   host = "",
   appName = DEFAULT_APP_NAME,
@@ -376,37 +387,47 @@ export function grokOgHeadTags({
   cwd = process.cwd(),
   url = "",
 } = {}) {
-  const composition = compositionOgAsset(url);
   const compositionTitle = compositionOgTitle(url);
+  const compositionAsset = compositionOgAsset(url);
   const title = compositionTitle || resolveOgTitle(site, appName, host, documentTitle);
   const publicHost = resolvePublicHost(host);
   const tags = [
     `<meta name="twitter:card" content="summary_large_image">`,
     `<meta property="og:title" content="${escapeHtml(title)}">`,
   ];
-  const description = compositionTitle
-    ? "A Xerographer Fonts composition — open the link to review the specimen."
-    : String(site.description ?? "").trim();
+  const description = compositionOgDescription(url) || String(site.description ?? "").trim();
   if (description) {
     tags.push(`<meta property="og:description" content="${escapeHtml(description)}">`);
+    tags.push(`<meta name="twitter:description" content="${escapeHtml(description)}">`);
+  }
+  if (compositionTitle) {
+    tags.push(`<meta name="twitter:title" content="${escapeHtml(title)}">`);
   }
   if (String(site.type ?? "").toLowerCase() === "x:game") {
     tags.push(`<meta property="og:type" content="x:game">`);
   }
   if (publicHost) {
-    const asset = composition || resolveOgCardAsset(site, cwd);
+    const asset = resolveOgCardAsset(site, cwd);
     const custom = Boolean(asset);
-    let image = custom
-      ? `https://${publicHost}${asset.startsWith("/") ? asset : `/${asset}`}`
-      : `${ogServiceUrl()}/v1/card.png?host=${encodeURIComponent(publicHost)}&title=${encodeURIComponent(title)}`;
-    const color = !custom && !composition ? placeholderCardColor(site) : "";
+    let image = compositionAsset
+      ? `https://${publicHost}${compositionAsset}`
+      : custom
+        ? `https://${publicHost}${asset.startsWith("/") ? asset : `/${asset}`}`
+        : `${ogServiceUrl()}/v1/card.png?host=${encodeURIComponent(publicHost)}&title=${encodeURIComponent(title)}`;
+    const color = !custom && !compositionAsset ? placeholderCardColor(site) : "";
     if (color) image += `&color=${encodeURIComponent(color)}`;
     tags.push(`<meta property="og:image" content="${escapeHtml(image)}">`);
     tags.push(`<meta property="og:image:width" content="1200">`);
     tags.push(`<meta property="og:image:height" content="630">`);
     tags.push(`<meta name="twitter:image" content="${escapeHtml(image)}">`);
+    if (compositionAsset) {
+      tags.push(`<meta property="og:image:type" content="image/png">`);
+      const { pathname, search } = requestPathAndQuery(url);
+      const canonical = `${pathname}${search ? `?${search}` : ""}`;
+      tags.push(`<meta property="og:url" content="${escapeHtml(`https://${publicHost}${canonical}`)}">`);
+    }
     const banner = String(site.banner ?? "").trim();
-    if (banner) {
+    if (banner && !compositionAsset) {
       const bannerUrl = `https://${publicHost}${banner.startsWith("/") ? banner : `/${banner}`}`;
       tags.push(`<meta property="x:game:image" content="${escapeHtml(bannerUrl)}">`);
       tags.push(`<meta property="x:game:image:width" content="1200">`);

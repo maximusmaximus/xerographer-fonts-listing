@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { HintSpot } from "@/components/guide";
 import { LicensePanel } from "@/components/license-panel";
 import { PageShell } from "@/components/layout";
 import { CATALOG_LICENSE_USD, LICENSE_TERMS, LICENSE_USD, usdLabel } from "@/lib/constants";
@@ -9,6 +10,7 @@ function Agents() {
   return (
     <PageShell>
       <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+        <HintSpot id="agents">
         <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">MCP + x402</p>
         <h1 className="mt-3 font-display text-4xl sm:text-5xl">A foundry for agents</h1>
         <p className="mt-5 text-lg text-fg-muted">
@@ -16,6 +18,7 @@ function Agents() {
           {` ${usdLabel(LICENSE_USD)}`} USDC per font per agent, or {usdLabel(CATALOG_LICENSE_USD)} for every face
           for one agent. Payment is x402. The PAYMENT-RESPONSE is the grant.
         </p>
+        </HintSpot>
 
         <div className="mt-10">
           <LicensePanel />

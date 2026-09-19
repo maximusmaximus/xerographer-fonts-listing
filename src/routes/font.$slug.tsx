@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { HintSpot } from "@/components/guide";
 import { PageShell } from "@/components/layout";
 import { LicensePanel } from "@/components/license-panel";
 import { FontPlayground } from "@/components/playground";
@@ -13,6 +14,14 @@ export const Route = createFileRoute("/font/$slug")({
     const font = getFont(params.slug);
     if (!font) throw notFound();
     return withSources(font);
+  },
+  head: ({ loaderData, match }) => {
+    const font = loaderData;
+    const text = match.search.text?.trim();
+    const title = text
+      ? `${text} · ${font?.name ?? "Font"} — Xerographer Fonts`
+      : `${font?.name ?? "Font"} — Xerographer Fonts`;
+    return { meta: [{ title }] };
   },
   component: FontPage,
 });
@@ -67,6 +76,7 @@ function FontPage() {
               />
             </div>
             <div className="mt-8">
+              <HintSpot id="sources">
               <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Sources</h2>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {font.hosts.map((host) => (
@@ -101,6 +111,7 @@ function FontPage() {
                   </a>
                 </li>
               </ul>
+              </HintSpot>
             </div>
           </div>
           <LicensePanel font={font} />

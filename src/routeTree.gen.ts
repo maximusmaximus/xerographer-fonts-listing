@@ -16,6 +16,7 @@ import { Route as DotwellKnownMcpDotjsonRouteImport } from './routes/[.]well-kno
 import { Route as ApiFontsRouteImport } from './routes/api/fonts'
 import { Route as ApiLicensesRouteImport } from './routes/api/licenses'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
+import { Route as ApiOgCompositionRouteImport } from './routes/api/og-composition'
 import { Route as FontSlugRouteImport } from './routes/font.$slug'
 import { Route as LicenseIdRouteImport } from './routes/license.$id'
 import { Route as ApiFontFileSlugRouteImport } from './routes/api/font-file.$slug'
@@ -58,6 +59,11 @@ const ApiMcpRoute = ApiMcpRouteImport.update({
   path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgCompositionRoute = ApiOgCompositionRouteImport.update({
+  id: '/api/og-composition',
+  path: '/api/og-composition',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FontSlugRoute = FontSlugRouteImport.update({
   id: '/font/$slug',
   path: '/font/$slug',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/api/fonts': typeof ApiFontsRoute
   '/api/licenses': typeof ApiLicensesRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/api/og-composition': typeof ApiOgCompositionRoute
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/api/fonts': typeof ApiFontsRoute
   '/api/licenses': typeof ApiLicensesRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/api/og-composition': typeof ApiOgCompositionRoute
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/api/fonts': typeof ApiFontsRoute
   '/api/licenses': typeof ApiLicensesRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/api/og-composition': typeof ApiOgCompositionRoute
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/api/fonts'
     | '/api/licenses'
     | '/api/mcp'
+    | '/api/og-composition'
     | '/font/$slug'
     | '/license/$id'
     | '/api/font-file/$slug'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/api/fonts'
     | '/api/licenses'
     | '/api/mcp'
+    | '/api/og-composition'
     | '/font/$slug'
     | '/license/$id'
     | '/api/font-file/$slug'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/api/fonts'
     | '/api/licenses'
     | '/api/mcp'
+    | '/api/og-composition'
     | '/font/$slug'
     | '/license/$id'
     | '/api/font-file/$slug'
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   ApiFontsRoute: typeof ApiFontsRoute
   ApiLicensesRoute: typeof ApiLicensesRouteWithChildren
   ApiMcpRoute: typeof ApiMcpRoute
+  ApiOgCompositionRoute: typeof ApiOgCompositionRoute
   FontSlugRoute: typeof FontSlugRoute
   LicenseIdRoute: typeof LicenseIdRoute
   ApiFontFileSlugRoute: typeof ApiFontFileSlugRoute
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/api/mcp'
       fullPath: '/api/mcp'
       preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/og-composition': {
+      id: '/api/og-composition'
+      path: '/api/og-composition'
+      fullPath: '/api/og-composition'
+      preLoaderRoute: typeof ApiOgCompositionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/font/$slug': {
@@ -325,6 +345,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFontsRoute: ApiFontsRoute,
   ApiLicensesRoute: ApiLicensesRouteWithChildren,
   ApiMcpRoute: ApiMcpRoute,
+  ApiOgCompositionRoute: ApiOgCompositionRoute,
   FontSlugRoute: FontSlugRoute,
   LicenseIdRoute: LicenseIdRoute,
   ApiFontFileSlugRoute: ApiFontFileSlugRoute,

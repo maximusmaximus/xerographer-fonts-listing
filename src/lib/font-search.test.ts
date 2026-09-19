@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { compositionHref, fontPreviewSearch, parseFontSearch, serializeComposition } from "./font-search.ts";
+import { compositionHref, compositionOgHref, compositionOgPath, fontPreviewSearch, parseFontSearch, serializeComposition } from "./font-search.ts";
 
 describe("font preview search", () => {
   it("omits empty tester text", () => {
@@ -69,5 +69,23 @@ describe("font preview search", () => {
       href,
       "https://fonts.example/font/funsized?text=HELLO&size=64&fg=%23ffcc00&bg=%231a3a2a&align=center",
     );
+  });
+
+  it("builds an og composition path with the font slug", () => {
+    const path = compositionOgPath("/font/funsized", {
+      text: "HELLO REVIEW",
+      fg: "#ffcc00",
+      bg: "#1a3a2a",
+      align: "center",
+    });
+    assert.equal(
+      path,
+      "/api/og-composition?text=HELLO+REVIEW&fg=%23ffcc00&bg=%231a3a2a&align=center&slug=funsized",
+    );
+    assert.equal(
+      compositionOgHref("/", { text: "HELLO REVIEW" }, "https://fonts.example"),
+      "https://fonts.example/api/og-composition?text=HELLO+REVIEW",
+    );
+    assert.equal(compositionOgPath("/", {}), "");
   });
 });

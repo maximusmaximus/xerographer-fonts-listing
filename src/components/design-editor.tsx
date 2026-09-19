@@ -42,6 +42,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ColorWheel } from "@/components/color-wheel";
+import { HintSpot } from "@/components/guide";
 import { ShareComposition } from "@/components/share-composition";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
@@ -80,7 +81,7 @@ import {
   type ShapeLayer,
   type TextLayer,
 } from "@/lib/editor";
-import { compositionHref, serializeComposition } from "@/lib/font-search";
+import { compositionHref, compositionOgHref, serializeComposition } from "@/lib/font-search";
 import { downloadBlob } from "@/lib/specimen-render.ts";
 import { fileStem } from "@/lib/specimen.ts";
 import {
@@ -680,6 +681,7 @@ export function FontPlayground({
 
   return (
     <div className="min-w-0 overflow-x-hidden rounded-xl bg-bg-elevated shadow-[var(--shadow-border)]">
+      <HintSpot id="tools">
       <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2">
         <ToolBtn pressed={tool === "select"} label="Select (V)" onClick={() => setTool("select")}>
           <MousePointer2 className="size-4" />
@@ -724,8 +726,10 @@ export function FontPlayground({
           ))}
         </div>
       </div>
+      </HintSpot>
 
       <div className="grid min-w-0 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <HintSpot id="studio">
         <div
           ref={stageRef}
           className={cn("editor-stage relative min-h-[22rem] overflow-auto bg-bg sm:min-h-[28rem]", tool === "hand" || space.current ? "cursor-grab" : "")}
@@ -793,6 +797,7 @@ export function FontPlayground({
             </div>
           </div>
         </div>
+        </HintSpot>
 
         <aside className="min-w-0 border-t border-border lg:border-l lg:border-t-0">
           <div className="flex gap-1 overflow-x-auto border-b border-border px-2 py-2">
@@ -949,6 +954,7 @@ export function FontPlayground({
         </aside>
       </div>
 
+      <HintSpot id="export">
       <div className="flex flex-wrap gap-2 border-t border-border p-3">
         <Button type="button" variant="secondary" size="sm" onClick={() => applyAtmosphere(ATMOSPHERES[Math.floor(Math.random() * ATMOSPHERES.length)]!)}>
           <Dices className="size-4" />
@@ -958,7 +964,11 @@ export function FontPlayground({
           <RotateCcw className="size-4" />
           Reset
         </Button>
-        <ShareComposition url={compositionHref(`/font/${slug}`, composition)} title={`${name}: ${textLayer?.text ?? name}`} />
+        <ShareComposition
+          url={compositionHref(`/font/${slug}`, composition)}
+          ogUrl={compositionOgHref(`/font/${slug}`, composition)}
+          title={`${name}: ${textLayer?.text ?? name}`}
+        />
         <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => void exportRaster("png")}>
           <Download className="size-4" />
           {busy === "png" ? "Saving…" : "PNG"}
@@ -973,6 +983,7 @@ export function FontPlayground({
         </Button>
         {note ? <p className="w-full text-sm text-fg-muted">{note}</p> : null}
       </div>
+      </HintSpot>
     </div>
   );
 }

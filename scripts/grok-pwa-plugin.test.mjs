@@ -8,9 +8,9 @@ import {
   appNameFromHost,
   compositionOgAsset,
   compositionOgTitle,
-  createHeadInjector,
+  createHeadInjector as createHeadInjectorRaw,
   grokXCreatorHeadTags,
-  injectGrokPwaHead,
+  injectGrokPwaHead as injectGrokPwaHeadRaw,
   isDocumentPath,
   isInstallQuery,
   publicAppHost,
@@ -22,6 +22,15 @@ import {
 import { renderInstallPage } from "./grok-pwa-plugin.mjs";
 
 const TEMPLATE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const EMPTY_CWD = mkdtempSync(join(tmpdir(), "grok-empty-"));
+
+function injectGrokPwaHead(html, ctx = {}) {
+  return injectGrokPwaHeadRaw(html, { cwd: EMPTY_CWD, ...ctx });
+}
+
+function createHeadInjector(ctx = {}) {
+  return createHeadInjectorRaw({ cwd: EMPTY_CWD, ...ctx });
+}
 
 test("injects before </head>", () => {
   const out = injectGrokPwaHead("<html><head><title>x</title></head><body></body></html>");
@@ -435,6 +444,7 @@ test("composition share URLs point og:image at the specimen card", () => {
   );
   assert.equal(compositionOgTitle("/?text=HELLO+REVIEW"), "HELLO REVIEW — Xerographer Fonts");
   assert.equal(compositionOgAsset("/"), "");
+  assert.equal(compositionOgAsset("/?text=HELLO+REVIEW"), "/api/og-composition?text=HELLO+REVIEW");
 
   const empty = mkdtempSync(join(tmpdir(), "grok-og-comp-"));
   const out = injectGrokPwaHead("<html><head></head></html>", {

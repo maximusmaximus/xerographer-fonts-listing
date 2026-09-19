@@ -48,14 +48,32 @@ ${body}
 </svg>`;
 }
 
+function xmlEscape(value: string): string {
+  return value.replace(/[&<>"]/g, (ch) => {
+    if (ch === "&") return "&#38;";
+    if (ch === "<") return "&#60;";
+    if (ch === ">") return "&#62;";
+    return "&#34;";
+  });
+}
+
+function captionBar(label: string, fg: string, bg: string): string {
+  return `<rect x="0" y="${OG_HEIGHT - 58}" width="${OG_WIDTH}" height="58" fill="${xmlEscape(bg)}" opacity="0.92"/>
+<rect x="0" y="${OG_HEIGHT - 58}" width="${OG_WIDTH}" height="1" fill="${xmlEscape(fg)}" opacity="0.22"/>
+<text x="40" y="${OG_HEIGHT - 22}" fill="${xmlEscape(fg)}" font-size="20" font-family="Georgia, Times, serif">${xmlEscape(label)}</text>`;
+}
+
 async function singleFaceSvg(slug: string, search: FontSearch): Promise<string | null> {
   const fontSize = Math.min(220, Math.max(72, Math.round((search.size ?? 72) * 1.7)));
   const laid = await glyphsFor(slug, search, OG_WIDTH, fontSize);
   if (!laid) return null;
-  const scale = Math.min(OG_WIDTH / laid.width, OG_HEIGHT / laid.height, 1);
+  const usableH = OG_HEIGHT - 58;
+  const scale = Math.min(OG_WIDTH / laid.width, usableH / laid.height, 1);
   const x = (OG_WIDTH - laid.width * scale) / 2;
-  const y = (OG_HEIGHT - laid.height * scale) / 2;
-  return cardSvg(laid.bg, pathGroup(laid.paths, laid.fg, x, y, scale));
+  const y = (usableH - laid.height * scale) / 2;
+  const font = getFont(slug);
+  const label = `${font?.name ?? slug} · Xerographer Fonts`;
+  return cardSvg(laid.bg, `${pathGroup(laid.paths, laid.fg, x, y, scale)}${captionBar(label, laid.fg, laid.bg)}`);
 }
 
 async function collageSvg(search: FontSearch): Promise<string | null> {
@@ -63,7 +81,7 @@ async function collageSvg(search: FontSearch): Promise<string | null> {
   const cols = 2;
   const rows = 2;
   const cellW = OG_WIDTH / cols;
-  const cellH = OG_HEIGHT / rows;
+  const cellH = (OG_HEIGHT - 58) / rows;
   const cells = await Promise.all(
     faces.map(async (font, i) => {
       const laid = await glyphsFor(font.slug, search, cellW, 72);
@@ -78,7 +96,9 @@ async function collageSvg(search: FontSearch): Promise<string | null> {
   );
   const body = cells.filter(Boolean).join("");
   if (!body) return null;
-  return cardSvg(search.bg ?? "#121212", body);
+  const bg = search.bg ?? "#121212";
+  const fg = search.fg ?? "#f2efe6";
+  return cardSvg(bg, `${body}${captionBar("Xerographer Fonts", fg, bg)}`);
 }
 
 export function compositionCacheKey(slug: string | undefined, search: FontSearch): string {

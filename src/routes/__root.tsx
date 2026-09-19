@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Link, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { GuideProvider } from "@/components/guide";
 import { ThemeProvider } from "@/lib/theme";
 import appCss from "../styles.css?url";
 
@@ -62,7 +63,9 @@ function RootDocument() {
         <PreviewHostBridge />
         <AuthProvider>
           <ThemeProvider>
-            <Outlet />
+            <GuideProvider>
+              <Outlet />
+            </GuideProvider>
           </ThemeProvider>
         </AuthProvider>
         <Scripts />

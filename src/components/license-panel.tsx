@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HintSpot } from "@/components/guide";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,6 +49,7 @@ export function LicensePanel({ font }: { font?: FontWithSources }) {
   }
 
   return (
+    <HintSpot id="license">
     <aside className="rounded-xl bg-bg-elevated p-5 shadow-[var(--shadow-border)]">
       <p className="text-xs uppercase tracking-[0.18em] text-fg-muted">Commercial use</p>
       {font ? (
@@ -104,5 +106,6 @@ export function LicensePanel({ font }: { font?: FontWithSources }) {
         POST /api/mcp · {font ? "purchase_commercial_license" : "purchase_catalog_license"}
       </p>
     </aside>
+    </HintSpot>
   );
 }

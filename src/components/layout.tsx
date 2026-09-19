@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { GuideToggle, HintSpot } from "@/components/guide";
 import { Button } from "@/components/ui/button";
 import { pickHeaderFont } from "@/lib/fonts";
 import { useTheme } from "@/lib/theme";
@@ -70,15 +71,18 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            onClick={toggle}
-            className="size-11 px-0"
-          >
-            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          </Button>
+          <GuideToggle />
+          <HintSpot id="theme" badge="left" className="shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={toggle}
+              className="size-11 px-0"
+            >
+              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </Button>
+          </HintSpot>
         </nav>
       </div>
     </header>

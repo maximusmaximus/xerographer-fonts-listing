@@ -119,6 +119,14 @@ export function parseFontSearch(search: Record<string, unknown>): FontSearch {
 
 export function compositionHref(pathname: string, composition: FontSearch, origin = ""): string {
   const serialized = serializeComposition(composition);
+  const params = compositionParams(serialized);
+  const query = params.toString();
+  const path = query ? `${pathname}?${query}` : pathname;
+  const base = origin || (typeof window !== "undefined" ? window.location.origin : "");
+  return base ? `${base}${path}` : path;
+}
+
+function compositionParams(serialized: FontSearch): URLSearchParams {
   const params = new URLSearchParams();
   if (serialized.text) params.set("text", serialized.text);
   if (serialized.size != null) params.set("size", String(serialized.size));
@@ -134,8 +142,21 @@ export function compositionHref(pathname: string, composition: FontSearch, origi
   if (serialized.ink) params.set("ink", serialized.ink);
   if (serialized.tx) params.set("tx", serialized.tx);
   if (serialized.ang != null) params.set("ang", String(serialized.ang));
-  const query = params.toString();
-  const path = query ? `${pathname}?${query}` : pathname;
+  return params;
+}
+
+export function compositionOgPath(pathname: string, composition: FontSearch): string {
+  const serialized = serializeComposition(composition);
+  if (!serialized.text) return "";
+  const params = compositionParams(serialized);
+  const slug = pathname.match(/^\/font\/([^/?#]+)/)?.[1];
+  if (slug) params.set("slug", decodeURIComponent(slug));
+  return `/api/og-composition?${params.toString()}`;
+}
+
+export function compositionOgHref(pathname: string, composition: FontSearch, origin = ""): string {
+  const path = compositionOgPath(pathname, composition);
+  if (!path) return "";
   const base = origin || (typeof window !== "undefined" ? window.location.origin : "");
   return base ? `${base}${path}` : path;
 }
