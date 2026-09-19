@@ -47,7 +47,7 @@ function FontPage() {
             </p>
             <div className="mt-8">
               <FontPlayground
-                key={`${font.slug}:${initialText ?? ""}:${initialSize ?? ""}:${initialFg ?? ""}:${initialBg ?? ""}:${search.align ?? ""}:${search.track ?? ""}:${search.lead ?? ""}:${search.case ?? ""}:${search.paper ?? ""}:${search.ink ?? ""}:${search.tx ?? ""}`}
+                key={font.slug}
                 slug={font.slug}
                 name={font.name}
                 initialText={initialText}

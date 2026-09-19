@@ -1,26 +1,25 @@
 import JSZip from "jszip";
 import { getFont } from "./fonts";
+import { dafontGet } from "./outbound";
 
 const cache = new Map<string, { bytes: Uint8Array; contentType: string; filename: string }>();
-
-const UA = "Mozilla/5.0 (compatible; XerographerCatalog/1.0; +https://maxi.grok.me)";
 
 export async function loadFontFile(slug: string): Promise<{ bytes: Uint8Array; contentType: string; filename: string } | null> {
   if (!getFont(slug)) return null;
   const hit = cache.get(slug);
   if (hit) return hit;
 
-  const url = `https://dl.dafont.com/dl/?f=${encodeURIComponent(slug)}`;
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": UA,
+  let fetched;
+  try {
+    fetched = await dafontGet(`https://dl.dafont.com/dl/?f=${encodeURIComponent(slug)}`, {
       Referer: `https://www.dafont.com/${slug}.font`,
       Accept: "*/*",
-    },
-    redirect: "follow",
-  });
-  if (!res.ok) return null;
-  const buf = new Uint8Array(await res.arrayBuffer());
+    });
+  } catch {
+    return null;
+  }
+  if (fetched.status < 200 || fetched.status >= 300) return null;
+  const buf = new Uint8Array(fetched.bytes);
   if (buf.byteLength < 20) return null;
   const head = new TextDecoder().decode(buf.slice(0, 16));
   if (head.startsWith("<!") || head.startsWith("<html") || head.startsWith("<HTML")) return null;

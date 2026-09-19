@@ -40,6 +40,7 @@ export function FontCard({
   const [ready, setReady] = useState(() => loaded.has(font.slug));
   const [failed, setFailed] = useState(false);
   const live = previewText.trim().length > 0;
+  const sample = live ? previewText : font.name;
 
   useEffect(() => {
     const node = ref.current;
@@ -92,21 +93,16 @@ export function FontCard({
                 lineHeight: 1,
               }}
             >
-              {previewText}
+              {sample}
             </p>
-          ) : live && !failed ? (
+          ) : live && visible && !failed ? (
             <div className="flex h-full w-full items-center justify-center" aria-busy="true" aria-label={`Loading ${font.name}`}>
               <span className="glyph-spin select-none font-display text-4xl leading-none">
-                {spinChar(previewText, font.slug)}
+                {spinChar(sample, font.slug)}
               </span>
             </div>
           ) : visible ? (
-            <img
-              src={`/api/preview-image/${font.slug}`}
-              alt={`${font.name} specimen`}
-              className="preview-invert max-h-full w-full object-contain object-left"
-              loading="lazy"
-            />
+            <SpecimenImage slug={font.slug} name={font.name} />
           ) : (
             <div className="h-16 w-full rounded-sm bg-bg-subtle" />
           )}
@@ -124,5 +120,22 @@ export function FontCard({
         </div>
       </Link>
     </div>
+  );
+}
+
+function SpecimenImage({ slug, name }: { slug: string; name: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return <p className="truncate font-display text-3xl leading-none text-fg">{name}</p>;
+  }
+  return (
+    <img
+      src={`/api/preview-image/${slug}`}
+      alt={`${name} specimen`}
+      className="preview-invert max-h-full w-full object-contain object-left"
+      loading="lazy"
+      decoding="async"
+      onError={() => setBroken(true)}
+    />
   );
 }
