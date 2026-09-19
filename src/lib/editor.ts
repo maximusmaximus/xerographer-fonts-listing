@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { mixHex } from "./color.ts";
 import { applyCase, type Align, type CaseMode } from "./specimen.ts";
 import { inkCss, paperBackground, type InkMode, type PaperMode, type TextureId } from "./surfaces.ts";
 
@@ -6,6 +7,30 @@ export type Blend = "normal" | "multiply" | "screen" | "overlay" | "darken" | "l
 export type Handle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 export type AlignTo = "left" | "center" | "right" | "top" | "middle" | "bottom";
 export type Box = { x: number; y: number; w: number; h: number };
+export type ArtboardGroupId = "standard" | "social" | "banner" | "spatial";
+export type Orientation = "landscape" | "portrait" | "square";
+
+export type ArtboardPreset = {
+  id: string;
+  label: string;
+  use: string;
+  width: number;
+  height: number;
+  group: ArtboardGroupId;
+};
+
+export type DepthLook = {
+  id: string;
+  label: string;
+  rotateX: number;
+  rotateY: number;
+  rotation: number;
+  translateZ: number;
+  extrude: number;
+  perspective: number;
+  perspectiveX: number;
+  perspectiveY: number;
+};
 
 export const BLENDS: { id: Blend; label: string }[] = [
   { id: "normal", label: "Normal" },
@@ -17,15 +42,75 @@ export const BLENDS: { id: Blend; label: string }[] = [
   { id: "soft-light", label: "Soft light" },
 ];
 
-export const ARTBOARDS = [
-  { id: "square", label: "Square", width: 1080, height: 1080 },
-  { id: "wide", label: "Wide", width: 1600, height: 900 },
-  { id: "story", label: "Story", width: 1080, height: 1920 },
-  { id: "card", label: "Card", width: 1200, height: 630 },
-] as const;
+export const ARTBOARD_GROUPS: { id: ArtboardGroupId; label: string; hint: string }[] = [
+  { id: "standard", label: "Standard", hint: "Print, screen, and everyday boards" },
+  { id: "social", label: "Social", hint: "Feed posts, stories, and thumbs" },
+  { id: "banner", label: "Banners", hint: "Headers, covers, and heros" },
+  { id: "spatial", label: "3D", hint: "Cube faces, panorama, stereo" },
+];
+
+export const ARTBOARDS: ArtboardPreset[] = [
+  { id: "square", label: "Square", use: "Posts, avatars, album art", width: 1080, height: 1080, group: "standard" },
+  { id: "hd", label: "HD 16:9", use: "Video, slides, desktop", width: 1920, height: 1080, group: "standard" },
+  { id: "qhd", label: "QHD", use: "High-res 16:9", width: 2560, height: 1440, group: "standard" },
+  { id: "portrait", label: "Phone", use: "Full-bleed 9:16", width: 1080, height: 1920, group: "standard" },
+  { id: "photo", label: "Photo 4:5", use: "Portrait stills", width: 1080, height: 1350, group: "standard" },
+  { id: "classic", label: "Classic 4:3", use: "Stills, documents", width: 1600, height: 1200, group: "standard" },
+  { id: "letter", label: "Letter", use: "8.5×11 in at 150 dpi", width: 1275, height: 1650, group: "standard" },
+  { id: "poster", label: "Poster", use: "18×24 in at 100 dpi", width: 1800, height: 2400, group: "standard" },
+  { id: "ig-post", label: "Instagram post", use: "Feed square", width: 1080, height: 1080, group: "social" },
+  { id: "ig-portrait", label: "Instagram portrait", use: "Feed 4:5", width: 1080, height: 1350, group: "social" },
+  { id: "story", label: "Story / Reel / TikTok", use: "9:16 vertical video", width: 1080, height: 1920, group: "social" },
+  { id: "x-post", label: "X post", use: "Landscape feed image", width: 1600, height: 900, group: "social" },
+  { id: "og", label: "Link card", use: "OG, Facebook, LinkedIn", width: 1200, height: 630, group: "social" },
+  { id: "yt-thumb", label: "YouTube thumb", use: "Video preview 16:9", width: 1280, height: 720, group: "social" },
+  { id: "pin", label: "Pinterest pin", use: "Standard 2:3 pin", width: 1000, height: 1500, group: "social" },
+  { id: "li-square", label: "LinkedIn square", use: "Professional feed", width: 1200, height: 1200, group: "social" },
+  { id: "x-header", label: "X header", use: "Profile banner 3:1", width: 1500, height: 500, group: "banner" },
+  { id: "li-banner", label: "LinkedIn banner", use: "Profile cover 4:1", width: 1584, height: 396, group: "banner" },
+  { id: "fb-cover", label: "Facebook cover", use: "Page or profile cover", width: 1640, height: 924, group: "banner" },
+  { id: "yt-channel", label: "YouTube channel", use: "Channel art 16:9", width: 2560, height: 1440, group: "banner" },
+  { id: "hero", label: "Website hero", use: "Page masthead 3:1", width: 1920, height: 640, group: "banner" },
+  { id: "email", label: "Email header", use: "Newsletter top 3:1", width: 1200, height: 400, group: "banner" },
+  { id: "billboard", label: "Billboard", use: "Wide display 4:1", width: 1920, height: 480, group: "banner" },
+  { id: "cube", label: "Cube face", use: "Skybox, material, icon", width: 1024, height: 1024, group: "spatial" },
+  { id: "pano", label: "Panorama", use: "Equirectangular 2:1", width: 2048, height: 1024, group: "spatial" },
+  { id: "stereo", label: "Stereo 3D", use: "Side-by-side 16:9", width: 1920, height: 1080, group: "spatial" },
+  { id: "env", label: "Environment", use: "Square sphere map", width: 2048, height: 2048, group: "spatial" },
+];
+
+export const DEPTH_LOOKS: DepthLook[] = [
+  { id: "flat", label: "Flat", rotateX: 0, rotateY: 0, rotation: 0, translateZ: 0, extrude: 0, perspective: 0, perspectiveX: 50, perspectiveY: 50 },
+  { id: "tilt-left", label: "Tilt left", rotateX: 6, rotateY: -34, rotation: 0, translateZ: 36, extrude: 0, perspective: 1200, perspectiveX: 48, perspectiveY: 42 },
+  { id: "tilt-right", label: "Tilt right", rotateX: 6, rotateY: 34, rotation: 0, translateZ: 36, extrude: 0, perspective: 1200, perspectiveX: 52, perspectiveY: 42 },
+  { id: "rise", label: "Rise", rotateX: -32, rotateY: 0, rotation: 0, translateZ: 20, extrude: 0, perspective: 1400, perspectiveX: 50, perspectiveY: 68 },
+  { id: "floor", label: "Floor", rotateX: 38, rotateY: 0, rotation: 0, translateZ: 8, extrude: 0, perspective: 1400, perspectiveX: 50, perspectiveY: 18 },
+  { id: "iso", label: "Isometric", rotateX: 60, rotateY: 0, rotation: -45, translateZ: 0, extrude: 0, perspective: 0, perspectiveX: 50, perspectiveY: 50 },
+  { id: "hero", label: "Hero", rotateX: -16, rotateY: -24, rotation: -4, translateZ: 56, extrude: 10, perspective: 1100, perspectiveX: 42, perspectiveY: 38 },
+  { id: "block", label: "Block type", rotateX: -8, rotateY: 16, rotation: 0, translateZ: 12, extrude: 22, perspective: 1600, perspectiveX: 50, perspectiveY: 45 },
+];
 
 export const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 export const SNAP_GRID = 8;
+export const ARTBOARD_MIN = 320;
+export const ARTBOARD_MAX = 4096;
+
+const KNOWN_RATIOS: [number, number, string][] = [
+  [1, 1, "1:1"],
+  [16, 9, "16:9"],
+  [9, 16, "9:16"],
+  [4, 5, "4:5"],
+  [5, 4, "5:4"],
+  [4, 3, "4:3"],
+  [3, 4, "3:4"],
+  [3, 2, "3:2"],
+  [2, 3, "2:3"],
+  [3, 1, "3:1"],
+  [4, 1, "4:1"],
+  [2, 1, "2:1"],
+  [21, 9, "21:9"],
+  [1.91, 1, "1.91:1"],
+];
 
 type LayerBase = {
   id: string;
@@ -40,6 +125,9 @@ type LayerBase = {
   hidden: boolean;
   flipX: boolean;
   flipY: boolean;
+  rotateX: number;
+  rotateY: number;
+  translateZ: number;
 };
 
 export type TextLayer = LayerBase & {
@@ -62,6 +150,7 @@ export type TextLayer = LayerBase & {
   shadowColor: string;
   glow: number;
   glowColor: string;
+  extrude: number;
 };
 
 export type ShapeLayer = LayerBase & {
@@ -102,6 +191,9 @@ export type Artboard = {
   paper: PaperMode;
   texture: TextureId;
   angle: number;
+  perspective: number;
+  perspectiveX: number;
+  perspectiveY: number;
 };
 
 export type EditorDoc = {
@@ -112,6 +204,50 @@ export type EditorDoc = {
 
 export function uid(): string {
   return `l${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function gcd(a: number, b: number): number {
+  let x = Math.abs(Math.round(a));
+  let y = Math.abs(Math.round(b));
+  while (y) {
+    const t = y;
+    y = x % y;
+    x = t;
+  }
+  return x || 1;
+}
+
+export function formatRatio(width: number, height: number): string {
+  if (width <= 0 || height <= 0) return "—";
+  const r = width / height;
+  for (const [a, b, label] of KNOWN_RATIOS) {
+    if (Math.abs(r - a / b) < 0.02) return label;
+  }
+  const g = gcd(width, height);
+  return `${width / g}:${height / g}`;
+}
+
+export function artboardOrientation(width: number, height: number): Orientation {
+  if (width <= 0 || height <= 0) return "landscape";
+  if (Math.abs(width - height) / Math.max(width, height) < 0.02) return "square";
+  return width > height ? "landscape" : "portrait";
+}
+
+export function clampArtboard(n: number): number {
+  if (!Number.isFinite(n)) return ARTBOARD_MIN;
+  return Math.min(ARTBOARD_MAX, Math.max(ARTBOARD_MIN, Math.round(n)));
+}
+
+export function matchArtboard(width: number, height: number): ArtboardPreset | undefined {
+  return ARTBOARDS.find((item) => item.width === width && item.height === height);
+}
+
+export function presetsInGroup(group: ArtboardGroupId): ArtboardPreset[] {
+  return ARTBOARDS.filter((item) => item.group === group);
+}
+
+function depthDefaults(): Pick<LayerBase, "rotateX" | "rotateY" | "translateZ"> {
+  return { rotateX: 0, rotateY: 0, translateZ: 0 };
 }
 
 export function defaultTextLayer(text: string, artboard: Artboard, fill = "#f2efe6"): TextLayer {
@@ -129,6 +265,7 @@ export function defaultTextLayer(text: string, artboard: Artboard, fill = "#f2ef
     hidden: false,
     flipX: false,
     flipY: false,
+    ...depthDefaults(),
     text,
     fontSize: Math.round(Math.min(120, artboard.width / 9)),
     tracking: 0,
@@ -147,6 +284,7 @@ export function defaultTextLayer(text: string, artboard: Artboard, fill = "#f2ef
     shadowColor: "#000000",
     glow: 0,
     glowColor: "#ffffff",
+    extrude: 0,
   };
 }
 
@@ -168,6 +306,7 @@ export function defaultShape(kind: "rect" | "ellipse", artboard: Artboard): Shap
     hidden: false,
     flipX: false,
     flipY: false,
+    ...depthDefaults(),
     fill: "#d7d2c8",
     fill2: "#6b665c",
     paper: "solid",
@@ -210,6 +349,7 @@ export function defaultImageLayer(
     hidden: false,
     flipX: false,
     flipY: false,
+    ...depthDefaults(),
     src,
     bright: 1,
     contrast: 1,
@@ -376,6 +516,34 @@ export function imageFilter(layer: ImageLayer): string {
   ].join(" ");
 }
 
+export function layerTransform(layer: Layer, withFlip = true): string {
+  const flipX = withFlip && layer.flipX ? -1 : 1;
+  const flipY = withFlip && layer.flipY ? -1 : 1;
+  return [
+    `translateZ(${layer.translateZ}px)`,
+    `rotateX(${layer.rotateX}deg)`,
+    `rotateY(${layer.rotateY}deg)`,
+    `rotateZ(${layer.rotation}deg)`,
+    `scaleX(${flipX})`,
+    `scaleY(${flipY})`,
+  ].join(" ");
+}
+
+export function extrusionShadows(layer: TextLayer): string {
+  if (layer.extrude <= 0) return "";
+  const steps = Math.min(40, Math.max(1, Math.round(layer.extrude)));
+  const rx = (layer.rotateX * Math.PI) / 180;
+  const ry = (layer.rotateY * Math.PI) / 180;
+  const parts: string[] = [];
+  for (let i = steps; i >= 1; i -= 1) {
+    const dx = Math.sin(ry) * i + i * 0.22;
+    const dy = -Math.sin(rx) * i + i * 0.55;
+    const shade = mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48);
+    parts.push(`${dx.toFixed(1)}px ${dy.toFixed(1)}px 0 ${shade}`);
+  }
+  return parts.join(", ");
+}
+
 export function layerCss(layer: Layer, fontFamily: string): CSSProperties {
   const box = layerBox(layer);
   const common: CSSProperties = {
@@ -385,8 +553,9 @@ export function layerCss(layer: Layer, fontFamily: string): CSSProperties {
     width: layer.w,
     opacity: layer.opacity,
     mixBlendMode: layer.blend as CSSProperties["mixBlendMode"],
-    transform: `rotate(${layer.rotation}deg) scaleX(${layer.flipX ? -1 : 1}) scaleY(${layer.flipY ? -1 : 1})`,
+    transform: layerTransform(layer),
     transformOrigin: "center center",
+    transformStyle: "preserve-3d",
     pointerEvents: layer.locked || layer.hidden ? "none" : "auto",
     visibility: layer.hidden ? "hidden" : "visible",
   };
@@ -397,6 +566,7 @@ export function layerCss(layer: Layer, fontFamily: string): CSSProperties {
         ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}`
         : "",
       layer.glow > 0 ? `0 0 ${layer.glow}px ${layer.glowColor}` : "",
+      extrusionShadows(layer),
     ]
       .filter(Boolean)
       .join(", ");
@@ -442,7 +612,15 @@ export function artboardStyle(artboard: Artboard): CSSProperties {
   return {
     width: artboard.width,
     height: artboard.height,
+    transformStyle: "preserve-3d",
     ...paperBackground(artboard.bg, artboard.bg2, artboard.paper, artboard.angle, artboard.texture),
+  };
+}
+
+export function artboardSceneStyle(artboard: Artboard, scale: number): CSSProperties {
+  return {
+    perspective: artboard.perspective > 0 ? `${artboard.perspective * scale}px` : undefined,
+    perspectiveOrigin: `${artboard.perspectiveX}% ${artboard.perspectiveY}%`,
   };
 }
 
@@ -454,4 +632,46 @@ export function canvasBlend(blend: Blend): GlobalCompositeOperation {
   if (blend === "normal") return "source-over";
   if (blend === "soft-light") return "soft-light";
   return blend;
+}
+
+export function scaleLayers(layers: Layer[], from: Artboard, width: number, height: number): Layer[] {
+  const sx = width / Math.max(1, from.width);
+  const sy = height / Math.max(1, from.height);
+  const s = Math.min(sx, sy);
+  const ox = (width - from.width * s) / 2;
+  const oy = (height - from.height * s) / 2;
+  return layers.map((layer) => {
+    const next = {
+      ...layer,
+      x: Math.round(layer.x * s + ox),
+      y: Math.round(layer.y * s + oy),
+      w: Math.max(8, Math.round(layer.w * s)),
+      translateZ: Math.round(layer.translateZ * s),
+    };
+    if (layer.type === "text") {
+      return {
+        ...next,
+        fontSize: Math.max(10, Math.round(layer.fontSize * s)),
+        extrude: Math.round(layer.extrude * s),
+      };
+    }
+    return { ...next, h: Math.max(8, Math.round(layer.h * s)) };
+  });
+}
+
+export function applyDepthLook(layer: Layer, look: DepthLook): Partial<Layer> {
+  const patch: Partial<Layer> = {
+    rotateX: look.rotateX,
+    rotateY: look.rotateY,
+    rotation: look.rotation,
+    translateZ: look.translateZ,
+  };
+  if (layer.type === "text") {
+    return { ...patch, extrude: look.extrude };
+  }
+  return patch;
+}
+
+export function hasDepth(layer: Layer): boolean {
+  return Boolean(layer.rotateX || layer.rotateY || layer.translateZ || (layer.type === "text" && layer.extrude));
 }

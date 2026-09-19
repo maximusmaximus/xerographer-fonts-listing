@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { hexToHsv, hsvToHex } from "./color.ts";
+import { hexToHsv, hsvToHex, mixHex } from "./color.ts";
 import { paperBackground } from "./surfaces.ts";
 
 describe("studio color", () => {
@@ -16,5 +16,9 @@ describe("studio color", () => {
     assert.equal(css.backgroundColor, "#121212");
     assert.match(css.backgroundImage, /linear-gradient/);
     assert.match(css.backgroundImage, /feTurbulence/);
+  });
+
+  it("mixes two hex colors", () => {
+    assert.equal(mixHex("#000000", "#ffffff", 0.5), "#808080");
   });
 });

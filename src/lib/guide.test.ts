@@ -21,7 +21,8 @@ describe("guide", () => {
 
   it("returns the current tour step", () => {
     assert.equal(currentTourStep("catalog", 0)?.id, "tester");
-    assert.equal(currentTourStep("font", 2)?.id, "export");
+    assert.equal(currentTourStep("font", 2)?.id, "canvas");
+    assert.equal(currentTourStep("font", 4)?.id, "export");
     assert.equal(currentTourStep(null, 0), null);
   });
 });

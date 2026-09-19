@@ -41,18 +41,22 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { CanvasPicker } from "@/components/canvas-picker";
 import { ColorWheel } from "@/components/color-wheel";
 import { HintSpot } from "@/components/guide";
 import { ShareComposition } from "@/components/share-composition";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
+import { currentTourStep, useGuide } from "@/lib/guide";
 import {
-  ARTBOARDS,
   BLENDS,
+  DEPTH_LOOKS,
   HANDLES,
   SNAP_GRID,
   alignLayer,
+  applyDepthLook,
   applyHandleResize,
+  artboardSceneStyle,
   artboardStyle,
   canvasBlend,
   cloneLayer,
@@ -66,14 +70,17 @@ import {
   layerBox,
   layerCenter,
   layerCss,
+  layerTransform,
   patchLayer,
   resizeLayer,
   rotatePoint,
+  scaleLayers,
   selectedLayer,
   snapValue,
   type AlignTo,
   type Artboard,
   type Box,
+  type DepthLook,
   type EditorDoc,
   type Handle,
   type ImageLayer,
@@ -82,6 +89,7 @@ import {
   type TextLayer,
 } from "@/lib/editor";
 import { compositionHref, compositionOgHref, serializeComposition } from "@/lib/font-search";
+import { mixHex } from "@/lib/color";
 import { downloadBlob } from "@/lib/specimen-render.ts";
 import { fileStem } from "@/lib/specimen.ts";
 import {
@@ -98,7 +106,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type Tool = "select" | "type" | "rect" | "ellipse" | "image" | "hand";
-type Panel = "paper" | "layer" | "type" | "fx";
+type Panel = "paper" | "layer" | "type" | "fx" | "3d";
 
 type Gesture =
   | { kind: "move"; id: string; dx: number; dy: number }
@@ -115,6 +123,9 @@ const DEFAULT_ARTBOARD: Artboard = {
   paper: "solid",
   texture: "grain",
   angle: 160,
+  perspective: 0,
+  perspectiveX: 50,
+  perspectiveY: 50,
 };
 
 export function FontPlayground({
@@ -194,8 +205,16 @@ export function FontPlayground({
   const [busy, setBusy] = useState<"png" | "jpg" | "svg" | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [fitCanvas, setFitCanvas] = useState(true);
+  const tourRoute = useGuide((s) => s.tourRoute);
+  const tourIndex = useGuide((s) => s.tourIndex);
 
   docRef.current = doc;
+
+  useEffect(() => {
+    const step = currentTourStep(tourRoute, tourIndex);
+    if (step?.id === "depth") setPanel("3d");
+  }, [tourIndex, tourRoute]);
 
   useEffect(() => {
     let cancelled = false;
@@ -381,7 +400,24 @@ export function FontPlayground({
   }
 
   function setArtboardSize(width: number, height: number) {
-    commit({ ...doc, artboard: { ...doc.artboard, width, height } });
+    const layers = fitCanvas ? scaleLayers(doc.layers, doc.artboard, width, height) : doc.layers;
+    commit({ ...doc, artboard: { ...doc.artboard, width, height }, layers });
+  }
+
+  function applyLook(look: DepthLook) {
+    const layers = selected
+      ? doc.layers.map((layer) => (layer.id === selected.id ? ({ ...layer, ...applyDepthLook(layer, look) } as Layer) : layer))
+      : doc.layers;
+    commit({
+      ...doc,
+      artboard: {
+        ...doc.artboard,
+        perspective: look.perspective,
+        perspectiveX: look.perspectiveX,
+        perspectiveY: look.perspectiveY,
+      },
+      layers,
+    });
   }
 
   const toBoard = useCallback((clientX: number, clientY: number) => {
@@ -708,23 +744,15 @@ export function FontPlayground({
         <ToolBtn label="Duplicate" onClick={duplicateSelected}><Copy className="size-4" /></ToolBtn>
         <ToolBtn label="Delete" onClick={removeSelected}><Trash2 className="size-4" /></ToolBtn>
         <ToolBtn pressed={snap} label="Snap to grid" onClick={() => setSnap((v) => !v)}><Grid3x3 className="size-4" /></ToolBtn>
-        <div className="ml-auto flex flex-wrap gap-1">
-          {ARTBOARDS.map((size) => (
-            <button
-              key={size.id}
-              type="button"
-              onClick={() => setArtboardSize(size.width, size.height)}
-              className={cn(
-                "h-11 rounded-full px-3 text-xs uppercase tracking-[0.14em]",
-                doc.artboard.width === size.width && doc.artboard.height === size.height
-                  ? "bg-accent text-accent-fg"
-                  : "bg-bg-subtle text-fg-muted hover:text-fg",
-              )}
-            >
-              {size.label}
-            </button>
-          ))}
-        </div>
+        <HintSpot id="canvas" className="ml-auto">
+          <CanvasPicker
+            width={doc.artboard.width}
+            height={doc.artboard.height}
+            fit={fitCanvas}
+            onFitChange={setFitCanvas}
+            onPick={setArtboardSize}
+          />
+        </HintSpot>
       </div>
       </HintSpot>
 
@@ -740,7 +768,11 @@ export function FontPlayground({
           <div className="flex min-h-full items-center justify-center p-4">
             <div
               className="relative shrink-0"
-              style={{ width: doc.artboard.width * scale, height: doc.artboard.height * scale }}
+              style={{
+                width: doc.artboard.width * scale,
+                height: doc.artboard.height * scale,
+                ...artboardSceneStyle(doc.artboard, scale),
+              }}
             >
               <div
                 ref={boardRef}
@@ -801,19 +833,29 @@ export function FontPlayground({
 
         <aside className="min-w-0 border-t border-border lg:border-l lg:border-t-0">
           <div className="flex gap-1 overflow-x-auto border-b border-border px-2 py-2">
-            {(["paper", "layer", "type", "fx"] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setPanel(key)}
-                className={cn(
-                  "h-11 shrink-0 rounded-full px-3 text-sm capitalize",
-                  panel === key ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg-muted hover:text-fg",
-                )}
-              >
-                {key === "fx" ? "FX" : key}
-              </button>
-            ))}
+            {(["paper", "layer", "type", "fx", "3d"] as const).map((key) => {
+              const tab = (
+                <button
+                  type="button"
+                  onClick={() => setPanel(key)}
+                  className={cn(
+                    "h-11 shrink-0 rounded-full px-3 text-sm capitalize",
+                    panel === key ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg-muted hover:text-fg",
+                  )}
+                >
+                  {key === "fx" ? "FX" : key === "3d" ? "3D" : key}
+                </button>
+              );
+              return key === "3d" ? (
+                <HintSpot id="depth" key={key} className="shrink-0">
+                  {tab}
+                </HintSpot>
+              ) : (
+                <span key={key} className="contents">
+                  {tab}
+                </span>
+              );
+            })}
           </div>
 
           <div className="max-h-[28rem] space-y-4 overflow-y-auto p-3 lg:max-h-[34rem]">
@@ -950,6 +992,16 @@ export function FontPlayground({
               <ShapeInspect layer={selected} onChange={updateSelected} />
             ) : null}
             {panel === "fx" && !selected ? <p className="text-sm text-fg-muted">Select a layer to add shadow, stroke, glow, or photo adjustments.</p> : null}
+
+            {panel === "3d" ? (
+              <DepthInspect
+                artboard={doc.artboard}
+                layer={selected}
+                onArtboard={(patch) => commit({ ...doc, artboard: { ...doc.artboard, ...patch } })}
+                onLayer={updateSelected}
+                onLook={applyLook}
+              />
+            ) : null}
           </div>
         </aside>
       </div>
@@ -1012,8 +1064,9 @@ function TransformFrame({
         top: box.y,
         width: box.w,
         height: box.h,
-        transform: `rotate(${layer.rotation}deg)`,
+        transform: layerTransform(layer, false),
         transformOrigin: "center center",
+        transformStyle: "preserve-3d",
         outline: "1px solid var(--color-accent)",
         outlineOffset: 1,
       }}
@@ -1148,6 +1201,101 @@ function TextEdit({
     >
       {layer.text}
     </p>
+  );
+}
+
+function DepthInspect({
+  artboard,
+  layer,
+  onArtboard,
+  onLayer,
+  onLook,
+}: {
+  artboard: Artboard;
+  layer: Layer | undefined;
+  onArtboard: (patch: Partial<Artboard>) => void;
+  onLayer: (patch: Partial<Layer>) => void;
+  onLook: (look: DepthLook) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Looks</p>
+      <div className="flex flex-wrap gap-1">
+        {DEPTH_LOOKS.map((look) => (
+          <button
+            key={look.id}
+            type="button"
+            onClick={() => onLook(look)}
+            className="h-11 rounded-full bg-bg-subtle px-3 text-sm text-fg-muted hover:text-fg"
+          >
+            {look.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Camera</p>
+      <RangeStrip
+        label="Persp"
+        min={0}
+        max={2400}
+        step={20}
+        value={artboard.perspective}
+        display={artboard.perspective === 0 ? "off" : `${artboard.perspective}`}
+        onChange={(perspective) => onArtboard({ perspective })}
+      />
+      <RangeStrip
+        label="Origin X"
+        min={0}
+        max={100}
+        step={1}
+        value={artboard.perspectiveX}
+        display={`${Math.round(artboard.perspectiveX)}%`}
+        onChange={(perspectiveX) => onArtboard({ perspectiveX })}
+      />
+      <RangeStrip
+        label="Origin Y"
+        min={0}
+        max={100}
+        step={1}
+        value={artboard.perspectiveY}
+        display={`${Math.round(artboard.perspectiveY)}%`}
+        onChange={(perspectiveY) => onArtboard({ perspectiveY })}
+      />
+      {layer ? (
+        <>
+          <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Layer</p>
+          <RangeStrip
+            label="Tilt X"
+            min={-80}
+            max={80}
+            step={1}
+            value={layer.rotateX}
+            display={`${Math.round(layer.rotateX)}°`}
+            onChange={(rotateX) => {
+              onLayer({ rotateX });
+              if (!artboard.perspective && rotateX) onArtboard({ perspective: 1200 });
+            }}
+          />
+          <RangeStrip
+            label="Tilt Y"
+            min={-80}
+            max={80}
+            step={1}
+            value={layer.rotateY}
+            display={`${Math.round(layer.rotateY)}°`}
+            onChange={(rotateY) => {
+              onLayer({ rotateY });
+              if (!artboard.perspective && rotateY) onArtboard({ perspective: 1200 });
+            }}
+          />
+          <RangeStrip label="Depth" min={-200} max={240} step={1} value={layer.translateZ} display={`${Math.round(layer.translateZ)}`} onChange={(translateZ) => onLayer({ translateZ })} />
+          {layer.type === "text" ? (
+            <RangeStrip label="Extrude" min={0} max={48} step={1} value={layer.extrude} display={`${Math.round(layer.extrude)}`} onChange={(extrude) => onLayer({ extrude })} />
+          ) : null}
+        </>
+      ) : (
+        <p className="text-sm text-fg-muted">Select a layer to tilt, push in depth, or extrude type.</p>
+      )}
+    </div>
   );
 }
 
@@ -1378,7 +1526,7 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
 async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jpg"): Promise<Blob> {
   const { width, height } = doc.artboard;
   const canvas = document.createElement("canvas");
-  const outScale = 2;
+  const outScale = Math.min(2, 4096 / Math.max(width, height));
   canvas.width = Math.max(1, Math.round(width * outScale));
   canvas.height = Math.max(1, Math.round(height * outScale));
   const ctx = canvas.getContext("2d");
@@ -1403,24 +1551,35 @@ async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jp
     ctx.globalAlpha = layer.opacity;
     ctx.globalCompositeOperation = canvasBlend(layer.blend);
     ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
-    ctx.rotate((layer.rotation * Math.PI) / 180);
-    ctx.scale(layer.flipX ? -1 : 1, layer.flipY ? -1 : 1);
+    applyLayerDepth(ctx, layer);
     if (layer.type === "text") {
-      ctx.fillStyle = layer.fill;
       ctx.font = `${layer.fontSize}px ${fontFamily}`;
       ctx.textAlign = layer.align === "center" ? "center" : layer.align === "right" ? "right" : "left";
       ctx.textBaseline = "top";
+      const lines = displayText(layer).split("\n");
+      const origin = layer.align === "center" ? 0 : layer.align === "right" ? box.w / 2 : -box.w / 2;
+      const paint = (fill: string, dx: number, dy: number) => {
+        ctx.fillStyle = fill;
+        lines.forEach((line, i) => {
+          ctx.fillText(line, origin + dx, -box.h / 2 + i * layer.fontSize * layer.leading + dy, box.w);
+        });
+      };
+      if (layer.extrude > 0) {
+        const steps = Math.min(40, Math.round(layer.extrude));
+        const rx = (layer.rotateX * Math.PI) / 180;
+        const ry = (layer.rotateY * Math.PI) / 180;
+        for (let i = steps; i >= 1; i -= 1) {
+          paint(mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48), Math.sin(ry) * i + i * 0.22, -Math.sin(rx) * i + i * 0.55);
+        }
+      }
       if (layer.shadowBlur || layer.shadowX || layer.shadowY) {
         ctx.shadowOffsetX = layer.shadowX;
         ctx.shadowOffsetY = layer.shadowY;
         ctx.shadowBlur = layer.shadowBlur;
         ctx.shadowColor = layer.shadowColor;
       }
-      const lines = displayText(layer).split("\n");
-      const origin = layer.align === "center" ? 0 : layer.align === "right" ? box.w / 2 : -box.w / 2;
-      lines.forEach((line, i) => {
-        ctx.fillText(line, origin, -box.h / 2 + i * layer.fontSize * layer.leading, box.w);
-      });
+      paint(layer.fill, 0, 0);
+      ctx.shadowColor = "transparent";
     } else if (layer.type === "rect" || layer.type === "ellipse") {
       ctx.fillStyle = layer.fill;
       if (layer.shadowBlur || layer.shadowX || layer.shadowY) {
@@ -1455,6 +1614,16 @@ async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jp
   );
   if (!out) throw new Error("Could not encode image");
   return out;
+}
+
+function applyLayerDepth(ctx: CanvasRenderingContext2D, layer: Layer) {
+  const rx = (layer.rotateX * Math.PI) / 180;
+  const ry = (layer.rotateY * Math.PI) / 180;
+  ctx.rotate((layer.rotation * Math.PI) / 180);
+  ctx.transform(1, Math.tan(rx) * 0.18, Math.tan(ry) * 0.18, 1, 0, layer.translateZ * -0.04);
+  const sx = Math.max(0.18, Math.abs(Math.cos(ry))) * (layer.flipX ? -1 : 1);
+  const sy = Math.max(0.18, Math.abs(Math.cos(rx))) * (layer.flipY ? -1 : 1);
+  ctx.scale(sx, sy);
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {

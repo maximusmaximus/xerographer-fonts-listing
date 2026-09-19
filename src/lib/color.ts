@@ -60,3 +60,12 @@ export function hsvToHex(h: number, s: number, v: number): string {
   const { r, g, b } = hsvToRgb(h, s, v);
   return rgbToHex(r, g, b);
 }
+
+export function mixHex(a: string, b: string, t: number): string {
+  const from = hexToRgb(a);
+  const to = hexToRgb(b);
+  const k = clamp01(t);
+  return rgbToHex(from.r + (to.r - from.r) * k, from.g + (to.g - from.g) * k, from.b + (to.b - from.b) * k);
+}
+
+

@@ -11,6 +11,8 @@ export type HintId =
   | "theme"
   | "studio"
   | "tools"
+  | "canvas"
+  | "depth"
   | "export"
   | "license"
   | "sources"
@@ -73,7 +75,17 @@ export const HINTS: Record<HintId, Hint> = {
   tools: {
     id: "tools",
     title: "Studio tools",
-    body: "Select, Type, shapes, image, and hand to pan. Snap keeps edges honest. Paper, layer, type, and FX live in the inspector.",
+    body: "Select, Type, shapes, image, and hand to pan. Snap keeps edges honest. Paper, layer, type, FX, and 3D live in the inspector.",
+  },
+  canvas: {
+    id: "canvas",
+    title: "Canvas sizes",
+    body: "Open Canvas to pick a board that matches where the piece will live. Each tile shows orientation, pixels, and ratio — standard, social, banners, and 3D maps.",
+  },
+  depth: {
+    id: "depth",
+    title: "3D settings",
+    body: "Camera perspective plus tilt, depth, and extruded type. Start from a look like isometric or block type, then fine-tune.",
   },
   export: {
     id: "export",
@@ -99,7 +111,7 @@ export const HINTS: Record<HintId, Hint> = {
 
 export const TOURS: Record<GuideRoute, HintId[]> = {
   catalog: ["tester", "colors", "share", "categories", "cards"],
-  font: ["studio", "tools", "export", "license"],
+  font: ["studio", "tools", "canvas", "depth", "export", "license"],
   agents: ["agents", "license"],
   about: ["theme"],
 };
