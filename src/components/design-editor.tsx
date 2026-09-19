@@ -13,10 +13,10 @@ import {
   CaseLower,
   CaseSensitive,
   CaseUpper,
+  ChevronLeft,
   Circle,
   Copy,
   Download,
-  Dices,
   Eye,
   EyeOff,
   FlipHorizontal2,
@@ -26,24 +26,28 @@ import {
   ImagePlus,
   Lock,
   Maximize2,
+  Minus,
+  MoreHorizontal,
   MousePointer2,
   Plus,
   Redo2,
-  RotateCcw,
   SendToBack,
+  SlidersHorizontal,
   Square,
   Trash2,
   Type,
   Undo2,
   Unlock,
+  X,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { CanvasPicker } from "@/components/canvas-picker";
 import { ColorWheel } from "@/components/color-wheel";
-import { HintSpot } from "@/components/guide";
+import { GuideToggle, HintSpot } from "@/components/guide";
+import { ThemeToggle } from "@/components/layout";
 import { ShareComposition } from "@/components/share-composition";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
@@ -64,6 +68,8 @@ import {
   defaultShape,
   defaultTextLayer,
   displayText,
+  fitPad,
+  fitScale,
   handleCursor,
   handleStyle,
   imageFilter,
@@ -145,6 +151,7 @@ export function FontPlayground({
   initialInk,
   initialTexture,
   initialAngle,
+  onOpenLicense,
 }: {
   slug: string;
   name: string;
@@ -162,6 +169,7 @@ export function FontPlayground({
   initialInk?: InkMode;
   initialTexture?: TextureId;
   initialAngle?: number;
+  onOpenLicense?: () => void;
 }) {
   const navigate = useNavigate({ from: "/font/$slug" });
   const boardRef = useRef<HTMLDivElement>(null);
@@ -206,6 +214,8 @@ export function FontPlayground({
   const [note, setNote] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [fitCanvas, setFitCanvas] = useState(true);
+  const [inspectOpen, setInspectOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const tourRoute = useGuide((s) => s.tourRoute);
   const tourIndex = useGuide((s) => s.tourIndex);
 
@@ -213,8 +223,23 @@ export function FontPlayground({
 
   useEffect(() => {
     const step = currentTourStep(tourRoute, tourIndex);
-    if (step?.id === "depth") setPanel("3d");
+    if (step?.id === "depth") {
+      setPanel("3d");
+      setInspectOpen(true);
+    }
   }, [tourIndex, tourRoute]);
+
+  useEffect(() => {
+    if (!inspectOpen && !moreOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setInspectOpen(false);
+        setMoreOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [inspectOpen, moreOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -236,9 +261,10 @@ export function FontPlayground({
     const stage = stageRef.current;
     if (!stage || zoomMode !== "fit") return;
     const fit = () => {
-      const pad = 32;
-      const next = Math.min((stage.clientWidth - pad) / doc.artboard.width, (stage.clientHeight - pad) / doc.artboard.height, 1);
-      setScale(Math.max(0.08, next));
+      const pad = fitPad(stage.clientWidth, stage.clientHeight);
+      const hud = 56;
+      const next = fitScale(stage.clientWidth, stage.clientHeight - hud, doc.artboard.width, doc.artboard.height, pad);
+      setScale(next);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -715,328 +741,512 @@ export function FontPlayground({
 
   const handlePx = Math.max(8, 12 / scale);
 
-  return (
-    <div className="min-w-0 overflow-x-hidden rounded-xl bg-bg-elevated shadow-[var(--shadow-border)]">
-      <HintSpot id="tools">
-      <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2">
-        <ToolBtn pressed={tool === "select"} label="Select (V)" onClick={() => setTool("select")}>
-          <MousePointer2 className="size-4" />
-        </ToolBtn>
-        <ToolBtn pressed={tool === "type"} label="Type (T)" onClick={() => setTool("type")}>
-          <Type className="size-4" />
-        </ToolBtn>
-        <ToolBtn pressed={tool === "rect"} label="Rectangle (R)" onClick={() => setTool("rect")}>
-          <Square className="size-4" />
-        </ToolBtn>
-        <ToolBtn pressed={tool === "ellipse"} label="Ellipse (O)" onClick={() => setTool("ellipse")}>
-          <Circle className="size-4" />
-        </ToolBtn>
-        <ToolBtn pressed={false} label="Place image (I)" onClick={() => fileRef.current?.click()}>
-          <ImagePlus className="size-4" />
-        </ToolBtn>
-        <ToolBtn pressed={tool === "hand"} label="Hand (H)" onClick={() => setTool("hand")}>
-          <Hand className="size-4" />
-        </ToolBtn>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickImage(f); e.target.value = ""; }} />
-        <span className="mx-1 h-6 w-px bg-border" />
-        <ToolBtn label="Undo" onClick={undo}><Undo2 className="size-4" /></ToolBtn>
-        <ToolBtn label="Redo" onClick={redo}><Redo2 className="size-4" /></ToolBtn>
-        <ToolBtn label="Duplicate" onClick={duplicateSelected}><Copy className="size-4" /></ToolBtn>
-        <ToolBtn label="Delete" onClick={removeSelected}><Trash2 className="size-4" /></ToolBtn>
-        <ToolBtn pressed={snap} label="Snap to grid" onClick={() => setSnap((v) => !v)}><Grid3x3 className="size-4" /></ToolBtn>
-        <HintSpot id="canvas" className="ml-auto">
-          <CanvasPicker
-            width={doc.artboard.width}
-            height={doc.artboard.height}
-            fit={fitCanvas}
-            onFitChange={setFitCanvas}
-            onPick={setArtboardSize}
-          />
-        </HintSpot>
-      </div>
-      </HintSpot>
+  const inspectorFields = (
+    <InspectorFields
+      panel={panel}
+      doc={doc}
+      selected={selected}
+      commit={commit}
+      updateSelected={updateSelected}
+      addTextAt={addTextAt}
+      reorder={reorder}
+      applyAtmosphere={applyAtmosphere}
+      applyLook={applyLook}
+      setDoc={setDoc}
+      setPanel={setPanel}
+    />
+  );
 
-      <div className="grid min-w-0 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <HintSpot id="studio">
-        <div
-          ref={stageRef}
-          className={cn("editor-stage relative min-h-[22rem] overflow-auto bg-bg sm:min-h-[28rem]", tool === "hand" || space.current ? "cursor-grab" : "")}
-          onPointerDown={onStagePointerDown}
-          onPointerMove={onHandleMove}
-          onPointerUp={onHandleUp}
+  return (
+    <div className="studio-root flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-bg">
+      <header className="flex h-12 shrink-0 items-center gap-0.5 border-b border-border px-1 sm:gap-1 sm:px-2">
+        <Link
+          to="/"
+          aria-label="Back to catalog"
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg hover:bg-bg-subtle"
         >
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div
-              className="relative shrink-0"
-              style={{
-                width: doc.artboard.width * scale,
-                height: doc.artboard.height * scale,
-                ...artboardSceneStyle(doc.artboard, scale),
-              }}
+          <ChevronLeft className="size-5" />
+        </Link>
+        <h1 className="min-w-0 truncate font-display text-lg tracking-tight sm:text-xl">{name}</h1>
+        <div className="ml-1 hidden items-center gap-0.5 md:flex">
+          <ToolBtn quiet label="Undo" onClick={undo}><Undo2 className="size-4" /></ToolBtn>
+          <ToolBtn quiet label="Redo" onClick={redo}><Redo2 className="size-4" /></ToolBtn>
+          <ToolBtn quiet label="Duplicate" onClick={duplicateSelected}><Copy className="size-4" /></ToolBtn>
+          <ToolBtn quiet label="Delete" onClick={removeSelected}><Trash2 className="size-4" /></ToolBtn>
+          <ToolBtn quiet pressed={snap} label="Snap to grid" onClick={() => setSnap((v) => !v)}><Grid3x3 className="size-4" /></ToolBtn>
+        </div>
+        <div className="ml-auto flex min-w-0 items-center gap-0.5">
+          {onOpenLicense ? (
+            <button
+              type="button"
+              onClick={onOpenLicense}
+              className="hidden h-11 shrink-0 items-center px-2 text-sm text-fg-muted hover:text-fg lg:inline-flex"
             >
+              License
+            </button>
+          ) : null}
+          <HintSpot id="export" className="flex items-center gap-0.5">
+            <ShareComposition
+              url={compositionHref(`/font/${slug}`, composition)}
+              ogUrl={compositionOgHref(`/font/${slug}`, composition)}
+              title={`${name}: ${textLayer?.text ?? name}`}
+            />
+            <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => void exportRaster("png")} className="px-2 sm:px-3">
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{busy === "png" ? "Saving…" : "PNG"}</span>
+            </Button>
+            <div className="relative">
+              <ToolBtn quiet pressed={moreOpen} label="More actions" onClick={() => setMoreOpen((v) => !v)}>
+                <MoreHorizontal className="size-4" />
+              </ToolBtn>
+              {moreOpen ? (
+                <div className="absolute right-0 top-full z-40 mt-1 w-44 rounded-lg bg-bg-elevated p-1 shadow-[var(--shadow-border)]">
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle sm:hidden" onClick={() => { setMoreOpen(false); void exportRaster("png"); }}>PNG</button>
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle" onClick={() => { setMoreOpen(false); void exportRaster("jpg"); }}>JPG</button>
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle" onClick={() => { setMoreOpen(false); void exportSvg(); }}>SVG</button>
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle md:hidden" onClick={() => { setMoreOpen(false); duplicateSelected(); }}>Duplicate</button>
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle md:hidden" onClick={() => { setMoreOpen(false); removeSelected(); }}>Delete</button>
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle md:hidden" onClick={() => { setMoreOpen(false); setSnap((v) => !v); }}>{snap ? "Snap off" : "Snap on"}</button>
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle" onClick={() => { setMoreOpen(false); applyAtmosphere(ATMOSPHERES[Math.floor(Math.random() * ATMOSPHERES.length)]!); }}>Shuffle paper</button>
+                  <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle" onClick={() => { setMoreOpen(false); commit(seed); }}>Reset board</button>
+                  {onOpenLicense ? (
+                    <button type="button" className="flex h-11 w-full items-center rounded-sm px-3 text-left text-sm hover:bg-bg-subtle lg:hidden" onClick={() => { setMoreOpen(false); onOpenLicense(); }}>License</button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </HintSpot>
+          <GuideToggle />
+          <ThemeToggle />
+        </div>
+      </header>
+      {note ? <p className="shrink-0 border-b border-border px-3 py-1 text-sm text-fg-muted">{note}</p> : null}
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
+        <HintSpot id="tools" className="order-3 shrink-0 md:order-none">
+          <nav className="studio-dock flex items-center justify-around gap-0.5 border-t border-border px-1 md:h-full md:w-14 md:flex-col md:justify-start md:gap-1 md:border-r md:border-t-0 md:py-2">
+            <ToolBtn quiet pressed={tool === "select"} label="Select (V)" onClick={() => setTool("select")}>
+              <MousePointer2 className="size-4" />
+            </ToolBtn>
+            <ToolBtn quiet pressed={tool === "type"} label="Type (T)" onClick={() => setTool("type")}>
+              <Type className="size-4" />
+            </ToolBtn>
+            <ToolBtn quiet pressed={tool === "rect"} label="Rectangle (R)" onClick={() => setTool("rect")}>
+              <Square className="size-4" />
+            </ToolBtn>
+            <ToolBtn quiet pressed={tool === "ellipse"} label="Ellipse (O)" onClick={() => setTool("ellipse")}>
+              <Circle className="size-4" />
+            </ToolBtn>
+            <ToolBtn quiet pressed={false} label="Place image (I)" onClick={() => fileRef.current?.click()}>
+              <ImagePlus className="size-4" />
+            </ToolBtn>
+            <ToolBtn quiet pressed={tool === "hand"} label="Hand (H)" onClick={() => setTool("hand")}>
+              <Hand className="size-4" />
+            </ToolBtn>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickImage(f); e.target.value = ""; }} />
+            <span className="mx-auto hidden h-px w-6 bg-border md:block" />
+            <div className="lg:hidden">
+              <ToolBtn quiet pressed={inspectOpen} label="Inspect" onClick={() => setInspectOpen((v) => !v)}>
+                <SlidersHorizontal className="size-4" />
+              </ToolBtn>
+            </div>
+          </nav>
+        </HintSpot>
+
+        <HintSpot id="studio" className="order-1 min-h-0 min-w-0 flex-1 md:order-none">
+          <div
+            ref={stageRef}
+            className={cn("editor-stage relative h-full min-h-0 overflow-auto bg-bg", tool === "hand" || space.current ? "cursor-grab" : "")}
+            onPointerDown={onStagePointerDown}
+            onPointerMove={onHandleMove}
+            onPointerUp={onHandleUp}
+          >
+            <div className="flex min-h-full items-center justify-center p-3 pb-16 sm:p-6 sm:pb-20">
               <div
-                ref={boardRef}
-                data-specimen
-                className={cn("absolute left-0 top-0 origin-top-left shadow-[var(--shadow-border)]", tool === "type" ? "cursor-text" : tool === "rect" || tool === "ellipse" ? "cursor-crosshair" : "cursor-default")}
+                className="relative shrink-0"
                 style={{
-                  ...artboardStyle(doc.artboard),
-                  transform: `scale(${scale})`,
+                  width: doc.artboard.width * scale,
+                  height: doc.artboard.height * scale,
+                  ...artboardSceneStyle(doc.artboard, scale),
                 }}
-                onPointerDown={onBoardPointerDown}
-                onPointerMove={onBoardPointerMove}
-                onPointerUp={onBoardPointerUp}
               >
-                {!ready ? (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg/40">
-                    <span className="glyph-spin select-none font-display text-6xl leading-none text-fg">x</span>
-                  </div>
-                ) : null}
-                {doc.layers.map((layer) => (
-                  <LayerView
-                    key={layer.id}
-                    layer={layer}
-                    fontFamily={fontFamily}
-                    selected={layer.id === doc.selectedId}
-                    editing={layer.id === editingId}
-                    onPointerDown={(ev) => onLayerPointerDown(ev, layer)}
-                    onPointerMove={onLayerPointerMove}
-                    onPointerUp={onLayerPointerUp}
-                    onEditStart={() => { setEditingId(layer.id); setDoc({ ...doc, selectedId: layer.id }); setPanel("type"); }}
-                    onEditEnd={(text) => { commit(patchLayer(doc, layer.id, { text } as Partial<Layer>)); setEditingId(null); }}
+                <div
+                  ref={boardRef}
+                  data-specimen
+                  className={cn("absolute left-0 top-0 origin-top-left shadow-[var(--shadow-border)]", tool === "type" ? "cursor-text" : tool === "rect" || tool === "ellipse" ? "cursor-crosshair" : "cursor-default")}
+                  style={{
+                    ...artboardStyle(doc.artboard),
+                    transform: `scale(${scale})`,
+                  }}
+                  onPointerDown={onBoardPointerDown}
+                  onPointerMove={onBoardPointerMove}
+                  onPointerUp={onBoardPointerUp}
+                >
+                  {!ready ? (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg/40">
+                      <span className="glyph-spin select-none font-display text-6xl leading-none text-fg">x</span>
+                    </div>
+                  ) : null}
+                  {doc.layers.map((layer) => (
+                    <LayerView
+                      key={layer.id}
+                      layer={layer}
+                      fontFamily={fontFamily}
+                      selected={layer.id === doc.selectedId}
+                      editing={layer.id === editingId}
+                      onPointerDown={(ev) => onLayerPointerDown(ev, layer)}
+                      onPointerMove={onLayerPointerMove}
+                      onPointerUp={onLayerPointerUp}
+                      onEditStart={() => { setEditingId(layer.id); setDoc({ ...doc, selectedId: layer.id }); setPanel("type"); }}
+                      onEditEnd={(text) => { commit(patchLayer(doc, layer.id, { text } as Partial<Layer>)); setEditingId(null); }}
+                    />
+                  ))}
+                  {selected && !selected.hidden && editingId !== selected.id ? (
+                    <TransformFrame
+                      layer={selected}
+                      handleSize={handlePx}
+                      onResizeStart={onResizeStart}
+                      onRotateStart={onRotateStart}
+                      onMove={onHandleMove}
+                      onUp={onHandleUp}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            </div>
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 z-20 flex items-end md:inset-x-3 md:bottom-3">
+              <div className="pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-bg-elevated/95 py-0.5 pl-0.5 pr-1 shadow-[var(--shadow-border)]">
+                <div className="flex md:hidden">
+                  <ToolBtn quiet label="Undo" onClick={undo}><Undo2 className="size-4" /></ToolBtn>
+                  <ToolBtn quiet label="Redo" onClick={redo}><Redo2 className="size-4" /></ToolBtn>
+                </div>
+                <HintSpot id="canvas" className="shrink-0">
+                  <CanvasPicker
+                    compact
+                    width={doc.artboard.width}
+                    height={doc.artboard.height}
+                    fit={fitCanvas}
+                    onFitChange={setFitCanvas}
+                    onPick={setArtboardSize}
                   />
-                ))}
-                {selected && !selected.hidden && editingId !== selected.id ? (
-                  <TransformFrame
-                    layer={selected}
-                    handleSize={handlePx}
-                    onResizeStart={onResizeStart}
-                    onRotateStart={onRotateStart}
-                    onMove={onHandleMove}
-                    onUp={onHandleUp}
-                  />
-                ) : null}
+                </HintSpot>
+                <ToolBtn quiet label="Zoom out" onClick={() => zoomBy(0.9)}><ZoomOut className="size-4" /></ToolBtn>
+                <button type="button" className="h-11 min-w-12 px-1 font-mono text-xs tabular-nums text-fg-muted" onClick={() => { setZoomMode("manual"); setScale(1); }}>
+                  {Math.round(scale * 100)}%
+                </button>
+                <ToolBtn quiet label="Zoom in" onClick={() => zoomBy(1.1)}><ZoomIn className="size-4" /></ToolBtn>
+                <ToolBtn quiet pressed={zoomMode === "fit"} label="Fit" onClick={() => setZoomMode("fit")}><Maximize2 className="size-4" /></ToolBtn>
               </div>
             </div>
           </div>
-          <div className="pointer-events-none sticky bottom-3 flex justify-center">
-            <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-bg-elevated/95 px-2 py-1 shadow-[var(--shadow-border)]">
-              <ToolBtn label="Zoom out" onClick={() => zoomBy(0.9)}><ZoomOut className="size-4" /></ToolBtn>
-              <button type="button" className="h-11 min-w-14 px-2 font-mono text-xs tabular-nums text-fg-muted" onClick={() => { setZoomMode("manual"); setScale(1); }}>
-                {Math.round(scale * 100)}%
-              </button>
-              <ToolBtn label="Zoom in" onClick={() => zoomBy(1.1)}><ZoomIn className="size-4" /></ToolBtn>
-              <ToolBtn label="Fit" onClick={() => setZoomMode("fit")}><Maximize2 className="size-4" /></ToolBtn>
-            </div>
-          </div>
-        </div>
         </HintSpot>
 
-        <aside className="min-w-0 border-t border-border lg:border-l lg:border-t-0">
-          <div className="flex gap-1 overflow-x-auto border-b border-border px-2 py-2">
-            {(["paper", "layer", "type", "fx", "3d"] as const).map((key) => {
-              const tab = (
-                <button
-                  type="button"
-                  onClick={() => setPanel(key)}
-                  className={cn(
-                    "h-11 shrink-0 rounded-full px-3 text-sm capitalize",
-                    panel === key ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg-muted hover:text-fg",
-                  )}
-                >
-                  {key === "fx" ? "FX" : key === "3d" ? "3D" : key}
-                </button>
-              );
-              return key === "3d" ? (
-                <HintSpot id="depth" key={key} className="shrink-0">
-                  {tab}
-                </HintSpot>
-              ) : (
-                <span key={key} className="contents">
-                  {tab}
-                </span>
-              );
-            })}
+        {selected && !inspectOpen ? (
+          <div className="order-2 md:hidden">
+            <QuickEditBar
+              selected={selected}
+              onChange={updateSelected}
+              onInspect={() => {
+                setPanel(selected.type === "text" ? "type" : "layer");
+                setInspectOpen(true);
+              }}
+            />
           </div>
+        ) : null}
 
-          <div className="max-h-[28rem] space-y-4 overflow-y-auto p-3 lg:max-h-[34rem]">
-            {panel === "paper" ? (
-              <>
-                <ModeRow options={PAPER_MODES} value={doc.artboard.paper} onChange={(paper) => commit({ ...doc, artboard: { ...doc.artboard, paper } })} />
-                <ColorWheel label="Paper" value={doc.artboard.bg} onChange={(bg) => commit({ ...doc, artboard: { ...doc.artboard, bg } })} size={120} />
-                {doc.artboard.paper !== "solid" ? (
-                  <ColorWheel label="Wash" value={doc.artboard.bg2} onChange={(bg2) => commit({ ...doc, artboard: { ...doc.artboard, bg2 } })} size={120} />
-                ) : null}
-                <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Tooth</p>
-                <div className="flex flex-wrap gap-2">
-                  {TEXTURES.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      aria-label={item.label}
-                      onClick={() => commit({ ...doc, artboard: { ...doc.artboard, texture: item.id } })}
-                      className={cn(
-                        "flex size-12 items-center justify-center rounded-full text-[10px] uppercase tracking-[0.12em]",
-                        doc.artboard.texture === item.id ? "shadow-[0_0_0_2px_var(--color-accent)]" : "shadow-[var(--shadow-border)]",
-                      )}
-                      style={paperBackground(doc.artboard.bg, doc.artboard.bg2, doc.artboard.paper, doc.artboard.angle, item.id) as CSSProperties}
-                    >
-                      <span className="rounded-full bg-bg/70 px-1.5 text-fg">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Atmospheres</p>
-                <div className="flex flex-wrap gap-2">
-                  {ATMOSPHERES.map((look) => (
-                    <button
-                      key={look.id}
-                      type="button"
-                      aria-label={look.name}
-                      onClick={() => applyAtmosphere(look)}
-                      className="size-12 rounded-full"
-                      style={paperBackground(look.bg, look.bg2, look.paper, look.angle, look.texture) as CSSProperties}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : null}
-
-            {panel === "layer" ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <Button type="button" variant="secondary" size="sm" onClick={() => addTextAt()}><Plus className="size-4" />Type</Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => reorder(1)}><BringToFront className="size-4" /></Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => reorder(-1)}><SendToBack className="size-4" /></Button>
-                </div>
-                <ul className="space-y-1">
-                  {[...doc.layers].reverse().map((layer) => (
-                    <li key={layer.id}>
-                      <button
-                        type="button"
-                        onClick={() => { setDoc({ ...doc, selectedId: layer.id }); setPanel(layer.type === "text" ? "type" : "fx"); }}
-                        className={cn(
-                          "flex h-11 w-full items-center gap-2 rounded-sm px-2 text-left text-sm",
-                          layer.id === doc.selectedId ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg",
-                        )}
-                      >
-                        <span className="min-w-0 flex-1 truncate">{layer.name}</span>
-                        <span
-                          role="button"
-                          className="inline-flex size-8 items-center justify-center"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            commit(patchLayer(doc, layer.id, { hidden: !layer.hidden }));
-                          }}
-                        >
-                          {layer.hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                        </span>
-                        <span
-                          role="button"
-                          className="inline-flex size-8 items-center justify-center"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            commit(patchLayer(doc, layer.id, { locked: !layer.locked }));
-                          }}
-                        >
-                          {layer.locked ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                {selected ? (
-                  <>
-                    <TransformInspect
-                      layer={selected}
-                      artboard={doc.artboard}
-                      onChange={updateSelected}
-                      onAlign={(where) => updateSelected(alignLayer(selected, doc.artboard, where))}
-                      onFlipX={() => updateSelected({ flipX: !selected.flipX })}
-                      onFlipY={() => updateSelected({ flipY: !selected.flipY })}
-                    />
-                    <RangeStrip label="Opacity" min={0.05} max={1} step={0.05} value={selected.opacity} display={`${Math.round(selected.opacity * 100)}%`} onChange={(opacity) => updateSelected({ opacity })} />
-                    <RangeStrip label="Rotate" min={-180} max={180} step={1} value={selected.rotation} display={`${Math.round(selected.rotation)}°`} onChange={(rotation) => updateSelected({ rotation })} />
-                    <label className="block text-xs uppercase tracking-[0.16em] text-fg-muted">
-                      Blend
-                      <select
-                        className="mt-1 h-11 w-full rounded-sm bg-bg-subtle px-2 text-sm normal-case tracking-normal text-fg"
-                        value={selected.blend}
-                        onChange={(ev) => updateSelected({ blend: ev.target.value as Layer["blend"] })}
-                      >
-                        {BLENDS.map((blend) => (
-                          <option key={blend.id} value={blend.id}>{blend.label}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </>
-                ) : (
-                  <p className="text-sm text-fg-muted">Select a layer, or choose Type and click the board.</p>
-                )}
-              </>
-            ) : null}
-
-            {panel === "type" && selected?.type === "text" ? (
-              <TypeInspect layer={selected} onChange={updateSelected} />
-            ) : null}
-            {panel === "type" && selected && selected.type !== "text" ? (
-              <ShapeInspect layer={selected} onChange={updateSelected} />
-            ) : null}
-            {panel === "type" && !selected ? <p className="text-sm text-fg-muted">Select a type layer, or press T and click the board.</p> : null}
-
-            {panel === "fx" && selected?.type === "text" ? (
-              <FxInspect layer={selected} onChange={updateSelected} />
-            ) : null}
-            {panel === "fx" && selected?.type === "image" ? (
-              <ImageFx layer={selected} onChange={updateSelected} />
-            ) : null}
-            {panel === "fx" && selected && (selected.type === "rect" || selected.type === "ellipse") ? (
-              <ShapeInspect layer={selected} onChange={updateSelected} />
-            ) : null}
-            {panel === "fx" && !selected ? <p className="text-sm text-fg-muted">Select a layer to add shadow, stroke, glow, or photo adjustments.</p> : null}
-
-            {panel === "3d" ? (
-              <DepthInspect
-                artboard={doc.artboard}
-                layer={selected}
-                onArtboard={(patch) => commit({ ...doc, artboard: { ...doc.artboard, ...patch } })}
-                onLayer={updateSelected}
-                onLook={applyLook}
-              />
-            ) : null}
-          </div>
+        <aside
+          className={cn(
+            "order-2 min-h-0 shrink-0 flex-col bg-bg-elevated md:order-none",
+            inspectOpen ? "flex max-h-[42dvh] border-t border-border md:max-h-none md:w-72 md:border-l md:border-t-0" : "hidden",
+            "lg:flex lg:max-h-none lg:w-80 lg:border-l lg:border-border",
+          )}
+        >
+          <InspectorChrome panel={panel} onPanel={setPanel} onClose={() => setInspectOpen(false)}>
+            {inspectorFields}
+          </InspectorChrome>
         </aside>
       </div>
-
-      <HintSpot id="export">
-      <div className="flex flex-wrap gap-2 border-t border-border p-3">
-        <Button type="button" variant="secondary" size="sm" onClick={() => applyAtmosphere(ATMOSPHERES[Math.floor(Math.random() * ATMOSPHERES.length)]!)}>
-          <Dices className="size-4" />
-          Shuffle
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => commit(seed)}>
-          <RotateCcw className="size-4" />
-          Reset
-        </Button>
-        <ShareComposition
-          url={compositionHref(`/font/${slug}`, composition)}
-          ogUrl={compositionOgHref(`/font/${slug}`, composition)}
-          title={`${name}: ${textLayer?.text ?? name}`}
-        />
-        <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => void exportRaster("png")}>
-          <Download className="size-4" />
-          {busy === "png" ? "Saving…" : "PNG"}
-        </Button>
-        <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => void exportRaster("jpg")}>
-          <Download className="size-4" />
-          {busy === "jpg" ? "Saving…" : "JPG"}
-        </Button>
-        <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => void exportSvg()}>
-          <Download className="size-4" />
-          {busy === "svg" ? "Saving…" : "SVG"}
-        </Button>
-        {note ? <p className="w-full text-sm text-fg-muted">{note}</p> : null}
-      </div>
-      </HintSpot>
     </div>
+  );
+}
+
+function QuickEditBar({
+  selected,
+  onChange,
+  onInspect,
+}: {
+  selected: Layer;
+  onChange: (patch: Partial<Layer>) => void;
+  onInspect: () => void;
+}) {
+  const fill = selected.type === "image" ? null : selected.fill;
+  return (
+    <div className="flex h-12 shrink-0 items-center gap-1 overflow-x-auto border-t border-border px-2">
+      {fill ? (
+        <button
+          type="button"
+          aria-label="Edit color"
+          onClick={onInspect}
+          className="size-8 shrink-0 rounded-full shadow-[var(--shadow-border)]"
+          style={{ background: fill }}
+        />
+      ) : null}
+      {selected.type === "text" ? (
+        <>
+          <ToolBtn quiet label="Smaller type" onClick={() => onChange({ fontSize: Math.max(18, selected.fontSize - 4) })}>
+            <Minus className="size-4" />
+          </ToolBtn>
+          <span className="min-w-8 text-center font-mono text-xs tabular-nums text-fg-muted">{selected.fontSize}</span>
+          <ToolBtn quiet label="Larger type" onClick={() => onChange({ fontSize: Math.min(320, selected.fontSize + 4) })}>
+            <Plus className="size-4" />
+          </ToolBtn>
+          <ToolBtn quiet pressed={selected.align === "left"} label="Align left" onClick={() => onChange({ align: "left" })}>
+            <AlignLeft className="size-4" />
+          </ToolBtn>
+          <ToolBtn quiet pressed={selected.align === "center"} label="Align center" onClick={() => onChange({ align: "center" })}>
+            <AlignCenter className="size-4" />
+          </ToolBtn>
+          <ToolBtn quiet pressed={selected.align === "right"} label="Align right" onClick={() => onChange({ align: "right" })}>
+            <AlignRight className="size-4" />
+          </ToolBtn>
+        </>
+      ) : null}
+      <button
+        type="button"
+        onClick={onInspect}
+        className="ml-auto inline-flex h-11 shrink-0 items-center gap-1 px-2 text-sm text-fg-muted hover:text-fg"
+      >
+        <SlidersHorizontal className="size-4" />
+        Edit
+      </button>
+    </div>
+  );
+}
+
+function InspectorChrome({
+  panel,
+  onPanel,
+  onClose,
+  children,
+}: {
+  panel: Panel;
+  onPanel: (panel: Panel) => void;
+  onClose?: () => void;
+  children: ReactNode;
+  scroll?: boolean;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-1 border-b border-border px-2 py-1">
+        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+          {(["paper", "layer", "type", "fx", "3d"] as const).map((key) => {
+            const tab = (
+              <button
+                type="button"
+                onClick={() => onPanel(key)}
+                className={cn(
+                  "h-11 shrink-0 rounded-full px-3 text-sm capitalize",
+                  panel === key ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg-muted hover:text-fg",
+                )}
+              >
+                {key === "fx" ? "FX" : key === "3d" ? "3D" : key}
+              </button>
+            );
+            return key === "3d" ? (
+              <HintSpot id="depth" key={key} className="shrink-0">
+                {tab}
+              </HintSpot>
+            ) : (
+              <span key={key} className="contents">
+                {tab}
+              </span>
+            );
+          })}
+        </div>
+        {onClose ? (
+          <div className="lg:hidden">
+            <ToolBtn quiet label="Close inspector" onClick={onClose}>
+              <X className="size-4" />
+            </ToolBtn>
+          </div>
+        ) : null}
+      </div>
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">{children}</div>
+    </div>
+  );
+}
+
+function InspectorFields({
+  panel,
+  doc,
+  selected,
+  commit,
+  updateSelected,
+  addTextAt,
+  reorder,
+  applyAtmosphere,
+  applyLook,
+  setDoc,
+  setPanel,
+}: {
+  panel: Panel;
+  doc: EditorDoc;
+  selected: Layer | undefined;
+  commit: (next: EditorDoc, record?: boolean) => void;
+  updateSelected: (patch: Partial<Layer>) => void;
+  addTextAt: (x?: number, y?: number) => void;
+  reorder: (dir: 1 | -1) => void;
+  applyAtmosphere: (look: Atmosphere) => void;
+  applyLook: (look: DepthLook) => void;
+  setDoc: (doc: EditorDoc) => void;
+  setPanel: (panel: Panel) => void;
+}) {
+  return (
+    <>
+      {panel === "paper" ? (
+        <>
+          <ModeRow options={PAPER_MODES} value={doc.artboard.paper} onChange={(paper) => commit({ ...doc, artboard: { ...doc.artboard, paper } })} />
+          <ColorWheel label="Paper" value={doc.artboard.bg} onChange={(bg) => commit({ ...doc, artboard: { ...doc.artboard, bg } })} size={120} />
+          {doc.artboard.paper !== "solid" ? (
+            <ColorWheel label="Wash" value={doc.artboard.bg2} onChange={(bg2) => commit({ ...doc, artboard: { ...doc.artboard, bg2 } })} size={120} />
+          ) : null}
+          <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Tooth</p>
+          <div className="flex flex-wrap gap-2">
+            {TEXTURES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={item.label}
+                onClick={() => commit({ ...doc, artboard: { ...doc.artboard, texture: item.id } })}
+                className={cn(
+                  "flex size-12 items-center justify-center rounded-full text-[10px] uppercase tracking-[0.12em]",
+                  doc.artboard.texture === item.id ? "shadow-[0_0_0_2px_var(--color-accent)]" : "shadow-[var(--shadow-border)]",
+                )}
+                style={paperBackground(doc.artboard.bg, doc.artboard.bg2, doc.artboard.paper, doc.artboard.angle, item.id) as CSSProperties}
+              >
+                <span className="rounded-full bg-bg/70 px-1.5 text-fg">{item.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Atmospheres</p>
+          <div className="flex flex-wrap gap-2">
+            {ATMOSPHERES.map((look) => (
+              <button
+                key={look.id}
+                type="button"
+                aria-label={look.name}
+                onClick={() => applyAtmosphere(look)}
+                className="size-12 rounded-full"
+                style={paperBackground(look.bg, look.bg2, look.paper, look.angle, look.texture) as CSSProperties}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {panel === "layer" ? (
+        <>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={() => addTextAt()}><Plus className="size-4" />Type</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => reorder(1)}><BringToFront className="size-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => reorder(-1)}><SendToBack className="size-4" /></Button>
+          </div>
+          <ul className="space-y-1">
+            {[...doc.layers].reverse().map((layer) => (
+              <li key={layer.id}>
+                <button
+                  type="button"
+                  onClick={() => { setDoc({ ...doc, selectedId: layer.id }); setPanel(layer.type === "text" ? "type" : "fx"); }}
+                  className={cn(
+                    "flex h-11 w-full items-center gap-2 rounded-sm px-2 text-left text-sm",
+                    layer.id === doc.selectedId ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg",
+                  )}
+                >
+                  <span className="min-w-0 flex-1 truncate">{layer.name}</span>
+                  <span
+                    role="button"
+                    className="inline-flex size-8 items-center justify-center"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      commit(patchLayer(doc, layer.id, { hidden: !layer.hidden }));
+                    }}
+                  >
+                    {layer.hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </span>
+                  <span
+                    role="button"
+                    className="inline-flex size-8 items-center justify-center"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      commit(patchLayer(doc, layer.id, { locked: !layer.locked }));
+                    }}
+                  >
+                    {layer.locked ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {selected ? (
+            <>
+              <TransformInspect
+                layer={selected}
+                artboard={doc.artboard}
+                onChange={updateSelected}
+                onAlign={(where) => updateSelected(alignLayer(selected, doc.artboard, where))}
+                onFlipX={() => updateSelected({ flipX: !selected.flipX })}
+                onFlipY={() => updateSelected({ flipY: !selected.flipY })}
+              />
+              <RangeStrip label="Opacity" min={0.05} max={1} step={0.05} value={selected.opacity} display={`${Math.round(selected.opacity * 100)}%`} onChange={(opacity) => updateSelected({ opacity })} />
+              <RangeStrip label="Rotate" min={-180} max={180} step={1} value={selected.rotation} display={`${Math.round(selected.rotation)}°`} onChange={(rotation) => updateSelected({ rotation })} />
+              <label className="block text-xs uppercase tracking-[0.16em] text-fg-muted">
+                Blend
+                <select
+                  className="mt-1 h-11 w-full rounded-sm bg-bg-subtle px-2 text-sm normal-case tracking-normal text-fg"
+                  value={selected.blend}
+                  onChange={(ev) => updateSelected({ blend: ev.target.value as Layer["blend"] })}
+                >
+                  {BLENDS.map((blend) => (
+                    <option key={blend.id} value={blend.id}>{blend.label}</option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : (
+            <p className="text-sm text-fg-muted">Select a layer, or choose Type and click the board.</p>
+          )}
+        </>
+      ) : null}
+
+      {panel === "type" && selected?.type === "text" ? (
+        <TypeInspect layer={selected} onChange={updateSelected} />
+      ) : null}
+      {panel === "type" && selected && selected.type !== "text" ? (
+        <ShapeInspect layer={selected} onChange={updateSelected} />
+      ) : null}
+      {panel === "type" && !selected ? <p className="text-sm text-fg-muted">Select a type layer, or press T and click the board.</p> : null}
+
+      {panel === "fx" && selected?.type === "text" ? (
+        <FxInspect layer={selected} onChange={updateSelected} />
+      ) : null}
+      {panel === "fx" && selected?.type === "image" ? (
+        <ImageFx layer={selected} onChange={updateSelected} />
+      ) : null}
+      {panel === "fx" && selected && (selected.type === "rect" || selected.type === "ellipse") ? (
+        <ShapeInspect layer={selected} onChange={updateSelected} />
+      ) : null}
+      {panel === "fx" && !selected ? <p className="text-sm text-fg-muted">Select a layer to add shadow, stroke, glow, or photo adjustments.</p> : null}
+
+      {panel === "3d" ? (
+        <DepthInspect
+          artboard={doc.artboard}
+          layer={selected}
+          onArtboard={(patch) => commit({ ...doc, artboard: { ...doc.artboard, ...patch } })}
+          onLayer={updateSelected}
+          onLook={applyLook}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -1424,11 +1634,13 @@ function ToolBtn({
   label,
   onClick,
   children,
+  quiet = false,
 }: {
   pressed?: boolean;
   label: string;
   onClick: () => void;
   children: ReactNode;
+  quiet?: boolean;
 }) {
   return (
     <button
@@ -1437,8 +1649,8 @@ function ToolBtn({
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "inline-flex size-11 items-center justify-center rounded-full transition-colors duration-150 ease-out",
-        pressed ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg hover:bg-bg-elevated",
+        "inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-colors duration-150 ease-out",
+        pressed ? "bg-accent text-accent-fg" : quiet ? "text-fg hover:bg-bg-subtle" : "bg-bg-subtle text-fg hover:bg-bg-elevated",
       )}
     >
       {children}

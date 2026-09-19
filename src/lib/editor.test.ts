@@ -10,6 +10,8 @@ import {
   defaultShape,
   defaultTextLayer,
   DEPTH_LOOKS,
+  fitPad,
+  fitScale,
   formatRatio,
   layerBox,
   matchArtboard,
@@ -116,6 +118,16 @@ describe("artboard presets", () => {
     const [next] = scaleLayers([layer], board, 2000, 1600);
     assert.equal(next?.w, 800);
     assert.equal(next && "h" in next ? next.h : 0, 400);
+  });
+
+  it("fits the artboard to the stage, including zoom above 100%", () => {
+    assert.equal(fitPad(390, 700), 16);
+    assert.equal(fitPad(1280, 800), 40);
+    assert.equal(fitPad(1920, 1080), 64);
+    assert.equal(fitScale(1080, 1080, 1080, 1080, 0, 3), 1);
+    assert.ok(fitScale(2000, 2000, 1080, 1080, 40, 3) > 1);
+    const phone = fitScale(390, 640, 1080, 1080, 16, 3);
+    assert.ok(phone < 0.4 && phone > 0.3);
   });
 
   it("applies a 3D look onto type", () => {

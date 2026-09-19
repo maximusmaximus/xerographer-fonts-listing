@@ -136,6 +136,23 @@ html:not(.dark) {
   touch-action: none;
 }
 
+.studio-root {
+  overscroll-behavior: none;
+}
+
+.studio-dock {
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .studio-dock {
+    padding-bottom: 0.5rem;
+  }
+}
+
+.studio-sheet {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
 .editor-handle {
   position: absolute;
   box-sizing: border-box;

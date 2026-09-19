@@ -238,6 +238,27 @@ export function clampArtboard(n: number): number {
   return Math.min(ARTBOARD_MAX, Math.max(ARTBOARD_MIN, Math.round(n)));
 }
 
+export function fitPad(stageW: number, stageH: number): number {
+  const shortest = Math.min(stageW, stageH);
+  if (shortest < 480) return 16;
+  if (shortest < 900) return 40;
+  return 64;
+}
+
+export function fitScale(
+  stageW: number,
+  stageH: number,
+  artW: number,
+  artH: number,
+  pad = 48,
+  cap = 3,
+): number {
+  const availW = Math.max(1, stageW - pad);
+  const availH = Math.max(1, stageH - pad);
+  if (artW <= 0 || artH <= 0) return 1;
+  return Math.max(0.08, Math.min(availW / artW, availH / artH, cap));
+}
+
 export function matchArtboard(width: number, height: number): ArtboardPreset | undefined {
   return ARTBOARDS.find((item) => item.width === width && item.height === height);
 }

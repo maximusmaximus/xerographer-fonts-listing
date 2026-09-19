@@ -153,13 +153,14 @@ export function ShareComposition({
         disabled={disabled}
         aria-expanded={open}
         aria-controls={panelId}
+        aria-label={primary}
         onClick={() => {
           if (disabled) return;
           setOpen((v) => !v);
         }}
       >
         {status === "idle" ? <Share2 className="size-4" /> : <Check className="size-4" />}
-        {primary}
+        <span className="hidden sm:inline">{primary}</span>
       </Button>
       {open ? (
         <div

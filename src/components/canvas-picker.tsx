@@ -63,12 +63,14 @@ export function CanvasPicker({
   fit,
   onFitChange,
   onPick,
+  compact = false,
 }: {
   width: number;
   height: number;
   fit: boolean;
   onFitChange: (fit: boolean) => void;
   onPick: (width: number, height: number) => void;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const matched = matchArtboard(width, height);
@@ -84,7 +86,11 @@ export function CanvasPicker({
       const r = root.current!.getBoundingClientRect();
       const widthPx = Math.min(416, window.innerWidth - 24);
       const left = Math.min(Math.max(12, r.right - widthPx), window.innerWidth - widthPx - 12);
-      const top = Math.min(r.bottom + 6, window.innerHeight - 24);
+      const estH = Math.min(512, window.innerHeight * 0.7);
+      const spaceBelow = window.innerHeight - r.bottom;
+      const top = spaceBelow < estH && r.top > 160
+        ? Math.max(12, r.top - estH - 8)
+        : Math.min(r.bottom + 6, window.innerHeight - 24);
       setPanel({ top, left, width: widthPx });
     };
     place();
@@ -139,20 +145,26 @@ export function CanvasPicker({
         aria-haspopup="dialog"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex min-h-11 items-center gap-2 rounded-full px-2 py-1 pr-3 text-left",
+          "flex h-11 max-w-full items-center gap-1.5 rounded-full text-left",
+          compact ? "px-1.5" : "px-2 pr-3",
           open ? "bg-accent text-accent-fg" : "bg-bg-subtle text-fg hover:bg-bg-elevated",
         )}
       >
         <CanvasThumb width={width} height={height} active={open} className="size-8 rounded-full" />
-        <span className="min-w-0">
-          <span className="block text-[10px] uppercase tracking-[0.16em] opacity-70">Canvas</span>
-          <span className="block truncate font-mono text-xs tabular-nums">
-            {width} × {height}
+        {compact ? (
+          <span className="hidden min-w-0 pr-1 font-mono text-[10px] tabular-nums opacity-80 sm:block">
+            {formatRatio(width, height)}
           </span>
-          <span className="block truncate font-mono text-[10px] tabular-nums opacity-70">
-            {formatRatio(width, height)} · {artboardOrientation(width, height)}
+        ) : (
+          <span className="min-w-0">
+            <span className="block truncate font-mono text-xs tabular-nums">
+              {width} × {height}
+            </span>
+            <span className="block truncate font-mono text-[10px] tabular-nums opacity-70">
+              {formatRatio(width, height)} · {artboardOrientation(width, height)}
+            </span>
           </span>
-        </span>
+        )}
       </button>
       {open ? (
         <div

@@ -54,8 +54,24 @@ function HeaderWordmark() {
   );
 }
 
-export function SiteHeader() {
+export function ThemeToggle() {
   const { theme, toggle } = useTheme();
+  return (
+    <HintSpot id="theme" badge="left" className="shrink-0">
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        onClick={toggle}
+        className="size-11 px-0"
+      >
+        {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      </Button>
+    </HintSpot>
+  );
+}
+
+export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
@@ -72,17 +88,7 @@ export function SiteHeader() {
             </Link>
           ))}
           <GuideToggle />
-          <HintSpot id="theme" badge="left" className="shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={toggle}
-              className="size-11 px-0"
-            >
-              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </Button>
-          </HintSpot>
+          <ThemeToggle />
         </nav>
       </div>
     </header>
@@ -119,12 +125,29 @@ export function SiteFooter() {
   );
 }
 
-export function PageShell({ children, className }: { children: ReactNode; className?: string }) {
+export function PageShell({
+  children,
+  className,
+  footer = true,
+  chrome = "site",
+}: {
+  children: ReactNode;
+  className?: string;
+  footer?: boolean;
+  chrome?: "site" | "studio";
+}) {
+  if (chrome === "studio") {
+    return (
+      <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-bg text-fg">
+        <main className={cn("flex min-h-0 min-w-0 flex-1 flex-col", className)}>{children}</main>
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden bg-bg text-fg">
       <SiteHeader />
-      <main className={cn("flex-1", className)}>{children}</main>
-      <SiteFooter />
+      <main className={cn("min-h-0 flex-1", className)}>{children}</main>
+      {footer ? <SiteFooter /> : null}
     </div>
   );
 }

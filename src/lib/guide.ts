@@ -70,12 +70,12 @@ export const HINTS: Record<HintId, Hint> = {
   studio: {
     id: "studio",
     title: "The artboard",
-    body: "This is the piece. Drag type, resize from the handles, or add another line with Type. The window never stretches the page.",
+    body: "This is the piece. Drag type, resize from the handles, or add another line with Type. The board fills the window — pinch or use the zoom chip to move in.",
   },
   tools: {
     id: "tools",
     title: "Studio tools",
-    body: "Select, Type, shapes, image, and hand to pan. Snap keeps edges honest. Paper, layer, type, FX, and 3D live in the inspector.",
+    body: "Select, Type, shapes, image, and hand to pan. On a phone they sit in the dock; on a desk they sit in the left rail. Inspect opens paper, type, FX, and 3D.",
   },
   canvas: {
     id: "canvas",
