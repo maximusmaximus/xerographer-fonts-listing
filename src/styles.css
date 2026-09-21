@@ -57,7 +57,7 @@ html:not(.dark) {
   html, body, #app {
     min-height: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     background: var(--color-bg);
     color: var(--color-fg);
   }
@@ -134,6 +134,12 @@ html:not(.dark) {
   background-size: 24px 24px;
   background-position: center;
   touch-action: none;
+}
+
+.editor-scene,
+.editor-board {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 .studio-root {

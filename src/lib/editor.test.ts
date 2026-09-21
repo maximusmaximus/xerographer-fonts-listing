@@ -10,14 +10,23 @@ import {
   defaultShape,
   defaultTextLayer,
   DEPTH_LOOKS,
+  extrusionOffset,
+  extrusionShadows,
   fitPad,
   fitScale,
   formatRatio,
+  layerAffine,
   layerBox,
+  layerMat4,
+  layerMatrix3d,
   matchArtboard,
+  matchDepthLook,
+  mat4Identity,
+  mat4Mul,
   nudge,
   scaleLayers,
   snapValue,
+  transformPoint,
   type Artboard,
 } from "./editor.ts";
 
@@ -137,5 +146,75 @@ describe("artboard presets", () => {
     const patch = applyDepthLook(text, look!);
     assert.equal(patch.rotateY, look!.rotateY);
     assert.equal(text.type === "text" ? (patch as { extrude?: number }).extrude : 0, look!.extrude);
+    const next = { ...text, ...patch } as typeof text;
+    assert.ok(matchDepthLook(next, { ...board, perspective: look!.perspective, perspectiveX: look!.perspectiveX, perspectiveY: look!.perspectiveY }, look!));
+  });
+});
+
+describe("3D projection", () => {
+  it("multiplies identity without changing a matrix", () => {
+    const id = mat4Identity();
+    const moved = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10, 20, 30, 1];
+    assert.deepEqual(mat4Mul(id, moved), moved);
+    assert.deepEqual(mat4Mul(moved, id), moved);
+  });
+
+  it("rotates 90 degrees clockwise in screen space", () => {
+    const layer = defaultTextLayer("Hi", board);
+    layer.rotation = 90;
+    layer.rotateX = 0;
+    layer.rotateY = 0;
+    const p = transformPoint(layerMat4(layer, board), 10, 0, 0);
+    assert.ok(Math.abs(p.x) < 1e-6, String(p.x));
+    assert.ok(Math.abs(p.y - 10) < 1e-6, String(p.y));
+  });
+
+  it("bakes perspective so far points shrink", () => {
+    const layer = defaultTextLayer("Hi", board);
+    layer.rotateY = 50;
+    const ortho = layerMat4(layer, { ...board, perspective: 0 });
+    const persp = layerMat4(layer, { ...board, perspective: 900 });
+    const o = transformPoint(ortho, 120, 0, 0);
+    const p = transformPoint(persp, 120, 0, 0);
+    assert.notEqual(layerMatrix3d(layer, { ...board, perspective: 900 }).includes("matrix3d("), false);
+    assert.ok(Math.abs(p.x) < Math.abs(o.x) + 40);
+    assert.notEqual(p.x.toFixed(3), o.x.toFixed(3));
+  });
+
+  it("emits a 16-value matrix3d string", () => {
+    const layer = defaultTextLayer("Hi", board);
+    const css = layerMatrix3d(layer, board);
+    const nums = css.slice("matrix3d(".length, -1).split(",");
+    assert.equal(nums.length, 16);
+    assert.equal(css.startsWith("matrix3d("), true);
+  });
+
+  it("keeps identity affine when the layer is flat", () => {
+    const layer = defaultTextLayer("Hi", board);
+    const aff = layerAffine(layer, board);
+    assert.ok(Math.abs(aff.a - 1) < 1e-6);
+    assert.ok(Math.abs(aff.d - 1) < 1e-6);
+    assert.ok(Math.abs(aff.b) < 1e-6);
+    assert.ok(Math.abs(aff.c) < 1e-6);
+  });
+
+  it("builds extrusion shadows along projected depth", () => {
+    const layer = defaultTextLayer("Hi", board);
+    layer.extrude = 12;
+    layer.rotateY = 30;
+    const shadows = extrusionShadows(layer, { ...board, perspective: 1200 });
+    assert.ok(shadows.includes("px"));
+    assert.equal(shadows.split("px 0 ").length - 1, 12);
+    const step = extrusionOffset(layer, { ...board, perspective: 1200 }, 8);
+    assert.ok(Math.abs(step.x) > 0.5 || Math.abs(step.y) > 0.5);
+  });
+
+  it("matches every shipped look onto a type layer", () => {
+    const text = defaultTextLayer("Hi", board);
+    for (const look of DEPTH_LOOKS) {
+      const next = { ...text, ...applyDepthLook(text, look) } as typeof text;
+      const board2 = { ...board, perspective: look.perspective, perspectiveX: look.perspectiveX, perspectiveY: look.perspectiveY };
+      assert.equal(matchDepthLook(next, board2, look), true, look.id);
+    }
   });
 });

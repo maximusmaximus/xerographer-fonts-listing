@@ -72,11 +72,15 @@ import {
   fitScale,
   handleCursor,
   handleStyle,
+  hasDepth,
   imageFilter,
   layerBox,
   layerCenter,
   layerCss,
-  layerTransform,
+  layerAffine,
+  layerMatrix3d,
+  matchDepthLook,
+  extrusionOffset,
   patchLayer,
   resizeLayer,
   rotatePoint,
@@ -431,9 +435,11 @@ export function FontPlayground({
   }
 
   function applyLook(look: DepthLook) {
-    const layers = selected
-      ? doc.layers.map((layer) => (layer.id === selected.id ? ({ ...layer, ...applyDepthLook(layer, look) } as Layer) : layer))
-      : doc.layers;
+    const targetId = selected?.id;
+    const layers = doc.layers.map((layer) => {
+      if (targetId && layer.id !== targetId) return layer;
+      return { ...layer, ...applyDepthLook(layer, look) } as Layer;
+    });
     commit({
       ...doc,
       artboard: {
@@ -863,7 +869,7 @@ export function FontPlayground({
           >
             <div className="flex min-h-full items-center justify-center p-3 pb-16 sm:p-6 sm:pb-20">
               <div
-                className="relative shrink-0"
+                className="editor-scene relative shrink-0"
                 style={{
                   width: doc.artboard.width * scale,
                   height: doc.artboard.height * scale,
@@ -873,10 +879,11 @@ export function FontPlayground({
                 <div
                   ref={boardRef}
                   data-specimen
-                  className={cn("absolute left-0 top-0 origin-top-left shadow-[var(--shadow-border)]", tool === "type" ? "cursor-text" : tool === "rect" || tool === "ellipse" ? "cursor-crosshair" : "cursor-default")}
+                  className={cn("editor-board absolute left-0 top-0 origin-top-left shadow-[var(--shadow-border)]", tool === "type" ? "cursor-text" : tool === "rect" || tool === "ellipse" ? "cursor-crosshair" : "cursor-default")}
                   style={{
                     ...artboardStyle(doc.artboard),
-                    transform: `scale(${scale})`,
+                    transform: `scale3d(${scale}, ${scale}, ${scale})`,
+                    WebkitTransform: `scale3d(${scale}, ${scale}, ${scale})`,
                   }}
                   onPointerDown={onBoardPointerDown}
                   onPointerMove={onBoardPointerMove}
@@ -891,6 +898,7 @@ export function FontPlayground({
                     <LayerView
                       key={layer.id}
                       layer={layer}
+                      artboard={doc.artboard}
                       fontFamily={fontFamily}
                       selected={layer.id === doc.selectedId}
                       editing={layer.id === editingId}
@@ -904,6 +912,7 @@ export function FontPlayground({
                   {selected && !selected.hidden && editingId !== selected.id ? (
                     <TransformFrame
                       layer={selected}
+                      artboard={doc.artboard}
                       handleSize={handlePx}
                       onResizeStart={onResizeStart}
                       onRotateStart={onRotateStart}
@@ -1252,6 +1261,7 @@ function InspectorFields({
 
 function TransformFrame({
   layer,
+  artboard,
   handleSize,
   onResizeStart,
   onRotateStart,
@@ -1259,6 +1269,7 @@ function TransformFrame({
   onUp,
 }: {
   layer: Layer;
+  artboard: Artboard;
   handleSize: number;
   onResizeStart: (e: ReactPointerEvent, handle: Handle, layer: Layer) => void;
   onRotateStart: (e: ReactPointerEvent, layer: Layer) => void;
@@ -1266,6 +1277,7 @@ function TransformFrame({
   onUp: (e: ReactPointerEvent) => void;
 }) {
   const box = layerBox(layer);
+  const transform = layerMatrix3d(layer, artboard);
   return (
     <div
       className="pointer-events-none absolute"
@@ -1274,7 +1286,8 @@ function TransformFrame({
         top: box.y,
         width: box.w,
         height: box.h,
-        transform: layerTransform(layer, false),
+        transform,
+        WebkitTransform: transform,
         transformOrigin: "center center",
         transformStyle: "preserve-3d",
         outline: "1px solid var(--color-accent)",
@@ -1304,6 +1317,7 @@ function TransformFrame({
 
 function LayerView({
   layer,
+  artboard,
   fontFamily,
   editing,
   onPointerDown,
@@ -1313,6 +1327,7 @@ function LayerView({
   onEditEnd,
 }: {
   layer: Layer;
+  artboard: Artboard;
   fontFamily: string;
   selected: boolean;
   editing: boolean;
@@ -1322,7 +1337,7 @@ function LayerView({
   onEditStart: () => void;
   onEditEnd: (text: string) => void;
 }) {
-  const style = layerCss(layer, fontFamily);
+  const style = layerCss(layer, fontFamily, artboard);
   if (layer.type === "text") {
     if (editing) {
       return (
@@ -1336,6 +1351,7 @@ function LayerView({
     return (
       <p
         data-layer={layer.id}
+        data-depth={hasDepth(layer) ? "1" : "0"}
         className="cursor-move select-none"
         style={style}
         onPointerDown={onPointerDown}
@@ -1430,13 +1446,19 @@ function DepthInspect({
   return (
     <div className="space-y-4">
       <p className="text-xs uppercase tracking-[0.16em] text-fg-muted">Looks</p>
+      <p className="text-sm text-fg-muted">Tilt, camera, and block type update live on the board.</p>
       <div className="flex flex-wrap gap-1">
         {DEPTH_LOOKS.map((look) => (
           <button
             key={look.id}
             type="button"
             onClick={() => onLook(look)}
-            className="h-11 rounded-full bg-bg-subtle px-3 text-sm text-fg-muted hover:text-fg"
+            className={cn(
+              "h-11 rounded-full px-3 text-sm",
+              layer && matchDepthLook(layer, artboard, look)
+                ? "bg-accent text-accent-fg"
+                : "bg-bg-subtle text-fg-muted hover:text-fg",
+            )}
           >
             {look.label}
           </button>
@@ -1763,7 +1785,7 @@ async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jp
     ctx.globalAlpha = layer.opacity;
     ctx.globalCompositeOperation = canvasBlend(layer.blend);
     ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
-    applyLayerDepth(ctx, layer);
+    applyLayerDepth(ctx, layer, doc.artboard);
     if (layer.type === "text") {
       ctx.font = `${layer.fontSize}px ${fontFamily}`;
       ctx.textAlign = layer.align === "center" ? "center" : layer.align === "right" ? "right" : "left";
@@ -1778,10 +1800,9 @@ async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jp
       };
       if (layer.extrude > 0) {
         const steps = Math.min(40, Math.round(layer.extrude));
-        const rx = (layer.rotateX * Math.PI) / 180;
-        const ry = (layer.rotateY * Math.PI) / 180;
         for (let i = steps; i >= 1; i -= 1) {
-          paint(mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48), Math.sin(ry) * i + i * 0.22, -Math.sin(rx) * i + i * 0.55);
+          const offset = extrusionOffset(layer, doc.artboard, i);
+          paint(mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48), offset.x, offset.y);
         }
       }
       if (layer.shadowBlur || layer.shadowX || layer.shadowY) {
@@ -1828,14 +1849,9 @@ async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jp
   return out;
 }
 
-function applyLayerDepth(ctx: CanvasRenderingContext2D, layer: Layer) {
-  const rx = (layer.rotateX * Math.PI) / 180;
-  const ry = (layer.rotateY * Math.PI) / 180;
-  ctx.rotate((layer.rotation * Math.PI) / 180);
-  ctx.transform(1, Math.tan(rx) * 0.18, Math.tan(ry) * 0.18, 1, 0, layer.translateZ * -0.04);
-  const sx = Math.max(0.18, Math.abs(Math.cos(ry))) * (layer.flipX ? -1 : 1);
-  const sy = Math.max(0.18, Math.abs(Math.cos(rx))) * (layer.flipY ? -1 : 1);
-  ctx.scale(sx, sy);
+function applyLayerDepth(ctx: CanvasRenderingContext2D, layer: Layer, artboard: Artboard) {
+  const { a, b, c, d } = layerAffine(layer, artboard);
+  ctx.transform(a, b, c, d, 0, 0);
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -1863,20 +1879,34 @@ function serializeBoardSvg(doc: EditorDoc, fontFamily: string): string {
     .filter((l) => !l.hidden)
     .map((layer) => {
       const box = layerBox(layer);
-      const origin = `transform="rotate(${layer.rotation} ${box.x + box.w / 2} ${box.y + box.h / 2}) scale(${layer.flipX ? -1 : 1} ${layer.flipY ? -1 : 1})"`;
+      const { a, b, c, d } = layerAffine(layer, artboard);
+      const cx = box.x + box.w / 2;
+      const cy = box.y + box.h / 2;
+      const wrap = (inner: string) =>
+        `<g transform="translate(${cx} ${cy}) matrix(${a} ${b} ${c} ${d} 0 0) translate(${-cx} ${-cy})">${inner}</g>`;
       if (layer.type === "text") {
         const fill = layer.ink === "solid" ? layer.fill : layer.fill;
         const text = escapeXml(displayText(layer));
-        return `<text x="${layer.x}" y="${layer.y + layer.fontSize}" fill="${fill}" font-size="${layer.fontSize}" font-family="${escapeXml(fontFamily)}" letter-spacing="${layer.tracking}em" opacity="${layer.opacity}">${text}</text>`;
+        let extra = "";
+        if (layer.extrude > 0) {
+          const steps = Math.min(40, Math.round(layer.extrude));
+          extra = Array.from({ length: steps }, (_, idx) => {
+            const i = steps - idx;
+            const offset = extrusionOffset(layer, artboard, i);
+            const shade = mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48);
+            return `<text x="${layer.x + offset.x}" y="${layer.y + layer.fontSize + offset.y}" fill="${shade}" font-size="${layer.fontSize}" font-family="${escapeXml(fontFamily)}" letter-spacing="${layer.tracking}em" opacity="${layer.opacity}">${text}</text>`;
+          }).join("");
+        }
+        return wrap(`${extra}<text x="${layer.x}" y="${layer.y + layer.fontSize}" fill="${fill}" font-size="${layer.fontSize}" font-family="${escapeXml(fontFamily)}" letter-spacing="${layer.tracking}em" opacity="${layer.opacity}">${text}</text>`);
       }
       if (layer.type === "ellipse") {
-        return `<ellipse cx="${layer.x + layer.w / 2}" cy="${layer.y + layer.h / 2}" rx="${layer.w / 2}" ry="${layer.h / 2}" fill="${layer.fill}" opacity="${layer.opacity}" ${origin}/>`;
+        return wrap(`<ellipse cx="${layer.x + layer.w / 2}" cy="${layer.y + layer.h / 2}" rx="${layer.w / 2}" ry="${layer.h / 2}" fill="${layer.fill}" opacity="${layer.opacity}"/>`);
       }
       if (layer.type === "rect") {
-        return `<rect x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}" rx="${layer.radius}" fill="${layer.fill}" opacity="${layer.opacity}" ${origin}/>`;
+        return wrap(`<rect x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}" rx="${layer.radius}" fill="${layer.fill}" opacity="${layer.opacity}"/>`);
       }
       if (layer.type !== "image") return "";
-      return `<image href="${escapeXml(layer.src)}" x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}" opacity="${layer.opacity}" ${origin}/>`;
+      return wrap(`<image href="${escapeXml(layer.src)}" x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}" opacity="${layer.opacity}"/>`);
     })
     .join("");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${artboard.width}" height="${artboard.height}" viewBox="0 0 ${artboard.width} ${artboard.height}"><rect width="100%" height="100%" fill="${bg.backgroundColor}"/>${layers}</svg>\n`;

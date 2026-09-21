@@ -86,8 +86,8 @@ export const DEPTH_LOOKS: DepthLook[] = [
   { id: "rise", label: "Rise", rotateX: -32, rotateY: 0, rotation: 0, translateZ: 20, extrude: 0, perspective: 1400, perspectiveX: 50, perspectiveY: 68 },
   { id: "floor", label: "Floor", rotateX: 38, rotateY: 0, rotation: 0, translateZ: 8, extrude: 0, perspective: 1400, perspectiveX: 50, perspectiveY: 18 },
   { id: "iso", label: "Isometric", rotateX: 60, rotateY: 0, rotation: -45, translateZ: 0, extrude: 0, perspective: 0, perspectiveX: 50, perspectiveY: 50 },
-  { id: "hero", label: "Hero", rotateX: -16, rotateY: -24, rotation: -4, translateZ: 56, extrude: 10, perspective: 1100, perspectiveX: 42, perspectiveY: 38 },
-  { id: "block", label: "Block type", rotateX: -8, rotateY: 16, rotation: 0, translateZ: 12, extrude: 22, perspective: 1600, perspectiveX: 50, perspectiveY: 45 },
+  { id: "hero", label: "Hero", rotateX: -18, rotateY: -28, rotation: -4, translateZ: 64, extrude: 16, perspective: 1000, perspectiveX: 40, perspectiveY: 36 },
+  { id: "block", label: "Block type", rotateX: -12, rotateY: 32, rotation: 0, translateZ: 20, extrude: 36, perspective: 1400, perspectiveX: 50, perspectiveY: 42 },
 ];
 
 export const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
@@ -537,36 +537,153 @@ export function imageFilter(layer: ImageLayer): string {
   ].join(" ");
 }
 
-export function layerTransform(layer: Layer, withFlip = true): string {
+export type Mat4 = number[];
+
+export function mat4Identity(): Mat4 {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+}
+
+export function mat4Mul(a: Mat4, b: Mat4): Mat4 {
+  const out: number[] = new Array(16);
+  for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < 4; row++) {
+      out[col * 4 + row] =
+        a[row] * b[col * 4] +
+        a[4 + row] * b[col * 4 + 1] +
+        a[8 + row] * b[col * 4 + 2] +
+        a[12 + row] * b[col * 4 + 3];
+    }
+  }
+  return out;
+}
+
+function mat4Translate(x: number, y: number, z: number): Mat4 {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+}
+
+function mat4RotateX(deg: number): Mat4 {
+  const a = (deg * Math.PI) / 180;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  return [1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1];
+}
+
+function mat4RotateY(deg: number): Mat4 {
+  const a = (deg * Math.PI) / 180;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  return [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1];
+}
+
+function mat4RotateZ(deg: number): Mat4 {
+  const a = (deg * Math.PI) / 180;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  return [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+}
+
+function mat4Scale3(x: number, y: number, z: number): Mat4 {
+  return [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1];
+}
+
+function mat4Perspective(distance: number): Mat4 {
+  if (!(distance > 0)) return mat4Identity();
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -1 / distance, 0, 0, 0, 1];
+}
+
+export function transformPoint(m: Mat4, x: number, y: number, z = 0): { x: number; y: number; z: number } {
+  const X = m[0] * x + m[4] * y + m[8] * z + m[12];
+  const Y = m[1] * x + m[5] * y + m[9] * z + m[13];
+  const Z = m[2] * x + m[6] * y + m[10] * z + m[14];
+  const W = m[3] * x + m[7] * y + m[11] * z + m[15];
+  if (!W) return { x: X, y: Y, z: Z };
+  return { x: X / W, y: Y / W, z: Z / W };
+}
+
+export function layerMat4(layer: Layer, artboard: Artboard): Mat4 {
+  const box = layerBox(layer);
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  const pox = (artboard.width * artboard.perspectiveX) / 100;
+  const poy = (artboard.height * artboard.perspectiveY) / 100;
+  const flipX = layer.flipX ? -1 : 1;
+  const flipY = layer.flipY ? -1 : 1;
+  let m = mat4Scale3(flipX, flipY, 1);
+  m = mat4Mul(mat4RotateZ(layer.rotation), m);
+  m = mat4Mul(mat4RotateY(layer.rotateY), m);
+  m = mat4Mul(mat4RotateX(layer.rotateX), m);
+  m = mat4Mul(mat4Translate(0, 0, layer.translateZ), m);
+  m = mat4Mul(mat4Translate(cx - pox, cy - poy, 0), m);
+  m = mat4Mul(mat4Perspective(artboard.perspective), m);
+  m = mat4Mul(mat4Translate(pox - cx, poy - cy, 0), m);
+  return m;
+}
+
+export function layerMatrix3d(layer: Layer, artboard: Artboard): string {
+  return `matrix3d(${layerMat4(layer, artboard).map((n) => Number(n.toFixed(6))).join(",")})`;
+}
+
+export function layerAffine(layer: Layer, artboard: Artboard): { a: number; b: number; c: number; d: number; e: number; f: number } {
+  const mat = layerMat4(layer, artboard);
+  const origin = transformPoint(mat, 0, 0, 0);
+  const axisX = transformPoint(mat, 100, 0, 0);
+  const axisY = transformPoint(mat, 0, 100, 0);
+  return {
+    a: (axisX.x - origin.x) / 100,
+    b: (axisX.y - origin.y) / 100,
+    c: (axisY.x - origin.x) / 100,
+    d: (axisY.y - origin.y) / 100,
+    e: origin.x,
+    f: origin.y,
+  };
+}
+
+export function extrusionOffset(layer: Layer, artboard: Artboard, depth: number): { x: number; y: number } {
+  const mat = layerMat4(layer, artboard);
+  const face = transformPoint(mat, 0, 0, 0);
+  const back = transformPoint(mat, 0, 0, -depth);
+  return { x: back.x - face.x, y: back.y - face.y };
+}
+
+export function layerTransform(layer: Layer, withFlip = true, artboard?: Artboard): string {
+  if (artboard) return layerMatrix3d(layer, artboard);
   const flipX = withFlip && layer.flipX ? -1 : 1;
   const flipY = withFlip && layer.flipY ? -1 : 1;
   return [
-    `translateZ(${layer.translateZ}px)`,
+    `translate3d(0,0,${layer.translateZ}px)`,
     `rotateX(${layer.rotateX}deg)`,
     `rotateY(${layer.rotateY}deg)`,
     `rotateZ(${layer.rotation}deg)`,
-    `scaleX(${flipX})`,
-    `scaleY(${flipY})`,
+    `scale3d(${flipX},${flipY},1)`,
   ].join(" ");
 }
 
-export function extrusionShadows(layer: TextLayer): string {
+export function extrusionShadows(layer: TextLayer, artboard?: Artboard): string {
   if (layer.extrude <= 0) return "";
   const steps = Math.min(40, Math.max(1, Math.round(layer.extrude)));
-  const rx = (layer.rotateX * Math.PI) / 180;
-  const ry = (layer.rotateY * Math.PI) / 180;
   const parts: string[] = [];
   for (let i = steps; i >= 1; i -= 1) {
-    const dx = Math.sin(ry) * i + i * 0.22;
-    const dy = -Math.sin(rx) * i + i * 0.55;
+    let dx: number;
+    let dy: number;
+    if (artboard) {
+      const offset = extrusionOffset(layer, artboard, i);
+      dx = offset.x;
+      dy = offset.y;
+    } else {
+      const rx = (layer.rotateX * Math.PI) / 180;
+      const ry = (layer.rotateY * Math.PI) / 180;
+      dx = Math.sin(ry) * i + i * 0.22;
+      dy = -Math.sin(rx) * i + i * 0.55;
+    }
     const shade = mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48);
     parts.push(`${dx.toFixed(1)}px ${dy.toFixed(1)}px 0 ${shade}`);
   }
   return parts.join(", ");
 }
 
-export function layerCss(layer: Layer, fontFamily: string): CSSProperties {
+export function layerCss(layer: Layer, fontFamily: string, artboard: Artboard): CSSProperties {
   const box = layerBox(layer);
+  const transform = layerMatrix3d(layer, artboard);
   const common: CSSProperties = {
     position: "absolute",
     left: layer.x,
@@ -574,9 +691,11 @@ export function layerCss(layer: Layer, fontFamily: string): CSSProperties {
     width: layer.w,
     opacity: layer.opacity,
     mixBlendMode: layer.blend as CSSProperties["mixBlendMode"],
-    transform: layerTransform(layer),
+    transform,
+    WebkitTransform: transform,
     transformOrigin: "center center",
     transformStyle: "preserve-3d",
+    WebkitTransformStyle: "preserve-3d",
     pointerEvents: layer.locked || layer.hidden ? "none" : "auto",
     visibility: layer.hidden ? "hidden" : "visible",
   };
@@ -587,7 +706,7 @@ export function layerCss(layer: Layer, fontFamily: string): CSSProperties {
         ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}`
         : "",
       layer.glow > 0 ? `0 0 ${layer.glow}px ${layer.glowColor}` : "",
-      extrusionShadows(layer),
+      extrusionShadows(layer, artboard),
     ]
       .filter(Boolean)
       .join(", ");
@@ -633,16 +752,27 @@ export function artboardStyle(artboard: Artboard): CSSProperties {
   return {
     width: artboard.width,
     height: artboard.height,
+    overflow: "visible",
     transformStyle: "preserve-3d",
+    WebkitTransformStyle: "preserve-3d",
     ...paperBackground(artboard.bg, artboard.bg2, artboard.paper, artboard.angle, artboard.texture),
   };
 }
 
-export function artboardSceneStyle(artboard: Artboard, scale: number): CSSProperties {
+export function artboardSceneStyle(_artboard: Artboard, _scale: number): CSSProperties {
   return {
-    perspective: artboard.perspective > 0 ? `${artboard.perspective * scale}px` : undefined,
-    perspectiveOrigin: `${artboard.perspectiveX}% ${artboard.perspectiveY}%`,
+    transformStyle: "preserve-3d",
+    WebkitTransformStyle: "preserve-3d",
   };
+}
+
+export function matchDepthLook(layer: Layer, artboard: Artboard, look: DepthLook): boolean {
+  const near = (a: number, b: number) => Math.abs(a - b) < 0.51;
+  if (!near(layer.rotateX, look.rotateX) || !near(layer.rotateY, look.rotateY)) return false;
+  if (!near(layer.rotation, look.rotation) || !near(layer.translateZ, look.translateZ)) return false;
+  if (!near(artboard.perspective, look.perspective)) return false;
+  if (layer.type === "text" && !near(layer.extrude, look.extrude)) return false;
+  return true;
 }
 
 export function cloneLayer(layer: Layer, offset = 24): Layer {
