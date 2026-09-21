@@ -15,6 +15,44 @@ export type FontRecord = {
   charset: string[];
 };
 
+/** Zip payload at or above this is treated as a large font file on font pages. */
+export const LARGE_FONT_BYTES = 500 * 1024;
+
+export function parseFontSizeBytes(size: string | null | undefined): number | null {
+  if (!size) return null;
+  const match = size.trim().match(/^([\d.,]+)\s*([kKmMgG])?[bB]?$/);
+  if (!match) return null;
+  const value = Number.parseFloat(match[1]!.replace(/,/g, ""));
+  if (!Number.isFinite(value) || value < 0) return null;
+  const unit = (match[2] ?? "").toUpperCase();
+  const mul = unit === "G" ? 1024 ** 3 : unit === "M" ? 1024 ** 2 : unit === "K" ? 1024 : 1;
+  return Math.round(value * mul);
+}
+
+export function formatFontSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    const mb = bytes / (1024 * 1024);
+    const digits = mb >= 10 ? 0 : 1;
+    return `${mb.toFixed(digits).replace(/\.0$/, "")} MB`;
+  }
+  if (bytes >= 1024) {
+    const kb = bytes / 1024;
+    return `${kb >= 100 ? Math.round(kb) : kb.toFixed(1).replace(/\.0$/, "")} KB`;
+  }
+  return `${bytes} B`;
+}
+
+export function isLargeFontFile(font: Pick<FontRecord, "size">): boolean {
+  const bytes = parseFontSizeBytes(font.size);
+  return bytes != null && bytes >= LARGE_FONT_BYTES;
+}
+
+export function largeFontNotice(font: Pick<FontRecord, "size">): string | null {
+  const bytes = parseFontSizeBytes(font.size);
+  if (bytes == null || bytes < LARGE_FONT_BYTES) return null;
+  return `Large font file (${formatFontSize(bytes)}). Loading it might slow a computer or system.`;
+}
+
 export type HostId =
   | "dafont"
   | "fontspace"

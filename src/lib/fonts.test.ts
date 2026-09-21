@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { allFonts, categoryTree, getFont, queryFonts, STATS, withSources } from "./fonts.ts";
+import {
+  allFonts,
+  categoryTree,
+  formatFontSize,
+  getFont,
+  isLargeFontFile,
+  LARGE_FONT_BYTES,
+  largeFontNotice,
+  parseFontSizeBytes,
+  queryFonts,
+  STATS,
+  withSources,
+} from "./fonts.ts";
 
 describe("font catalog", () => {
   it("contains the full DaFont author library", () => {
@@ -89,5 +101,32 @@ describe("font catalog", () => {
     const fancy = tree.find((c) => c.category === "Fancy");
     assert.ok(fancy && fancy.total > 500);
     assert.ok(fancy?.subcategories.some((s) => s.name === "Cartoon"));
+  });
+
+  it("parses DaFont size strings and flags only large files", () => {
+    assert.equal(parseFontSizeBytes("152 K"), 152 * 1024);
+    assert.equal(parseFontSizeBytes("1256 K"), 1256 * 1024);
+    assert.equal(parseFontSizeBytes("1.2 Mb"), Math.round(1.2 * 1024 * 1024));
+    assert.equal(parseFontSizeBytes("82 K"), 82 * 1024);
+    assert.equal(parseFontSizeBytes(null), null);
+    assert.equal(parseFontSizeBytes("n/a"), null);
+    assert.equal(formatFontSize(1256 * 1024), "1.2 MB");
+    assert.equal(formatFontSize(515 * 1024), "515 KB");
+    assert.equal(LARGE_FONT_BYTES, 500 * 1024);
+
+    const large = getFont("finethings");
+    const small = getFont("funsized");
+    assert.ok(large);
+    assert.ok(small);
+    assert.equal(isLargeFontFile(large!), true);
+    assert.equal(isLargeFontFile(small!), false);
+    assert.match(largeFontNotice(large!) ?? "", /1\.2 MB/);
+    assert.match(largeFontNotice(large!) ?? "", /computer or system/);
+    assert.equal(largeFontNotice(small!), null);
+
+    const flagged = allFonts().filter(isLargeFontFile);
+    assert.ok(flagged.length >= 4);
+    assert.ok(flagged.length < allFonts().length / 10);
+    assert.ok(flagged.every((f) => (parseFontSizeBytes(f.size) ?? 0) >= LARGE_FONT_BYTES));
   });
 });

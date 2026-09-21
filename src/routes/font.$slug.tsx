@@ -1,12 +1,12 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { HintSpot } from "@/components/guide";
 import { PageShell } from "@/components/layout";
 import { LicensePanel } from "@/components/license-panel";
 import { FontPlayground } from "@/components/playground";
 import { parseFontSearch } from "@/lib/font-search";
-import { getFont, withSources, type FontWithSources } from "@/lib/fonts";
+import { getFont, largeFontNotice, withSources, type FontWithSources } from "@/lib/fonts";
 import { currentTourStep, useGuide } from "@/lib/guide";
 import { useExplorer } from "@/lib/store";
 import { formatDownloads } from "@/lib/utils";
@@ -45,6 +45,7 @@ function FontPage() {
   const tourIndex = useGuide((s) => s.tourIndex);
   const step = currentTourStep(tourRoute, tourIndex);
   const showMeta = metaOpen || step?.id === "license" || step?.id === "sources";
+  const notice = largeFontNotice(font);
 
   useEffect(() => {
     const sync = () => {
@@ -57,32 +58,53 @@ function FontPage() {
 
   return (
     <PageShell chrome="studio">
-      <FontPlayground
-        key={font.slug}
-        slug={font.slug}
-        name={font.name}
-        initialText={initialText}
-        initialSize={initialSize}
-        initialFg={initialFg}
-        initialBg={initialBg}
-        initialAlign={search.align}
-        initialTrack={search.track}
-        initialLead={search.lead}
-        initialCase={search.case}
-        initialFg2={search.fg2}
-        initialBg2={search.bg2}
-        initialPaper={search.paper}
-        initialInk={search.ink}
-        initialTexture={search.tx}
-        initialAngle={search.ang}
-        onOpenLicense={() => setMetaOpen(true)}
-      />
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+        {notice ? <LargeFontNotice message={notice} /> : null}
+        <div className="min-h-0 min-w-0 flex-1">
+          <FontPlayground
+            key={font.slug}
+            slug={font.slug}
+            name={font.name}
+            initialText={initialText}
+            initialSize={initialSize}
+            initialFg={initialFg}
+            initialBg={initialBg}
+            initialAlign={search.align}
+            initialTrack={search.track}
+            initialLead={search.lead}
+            initialCase={search.case}
+            initialFg2={search.fg2}
+            initialBg2={search.bg2}
+            initialPaper={search.paper}
+            initialInk={search.ink}
+            initialTexture={search.tx}
+            initialAngle={search.ang}
+            onOpenLicense={() => setMetaOpen(true)}
+          />
+        </div>
+      </div>
       {showMeta ? <FontMetaSheet font={font} onClose={() => setMetaOpen(false)} /> : null}
     </PageShell>
   );
 }
 
+function LargeFontNotice({ message }: { message: string }) {
+  return (
+    <p
+      role="status"
+      data-large-font-notice=""
+      className="shrink-0 border-b border-border bg-bg-subtle px-3 py-2 text-sm leading-snug text-fg sm:px-4"
+    >
+      <span className="inline-flex items-start gap-2">
+        <Info className="mt-0.5 size-4 shrink-0 text-fg-muted" aria-hidden />
+        <span>{message}</span>
+      </span>
+    </p>
+  );
+}
+
 function FontMetaSheet({ font, onClose }: { font: FontWithSources; onClose: () => void }) {
+  const notice = largeFontNotice(font);
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2">
@@ -100,6 +122,7 @@ function FontMetaSheet({ font, onClose }: { font: FontWithSources; onClose: () =
           {font.size ? ` · ${font.size}` : ""}
         </p>
       </div>
+      {notice ? <LargeFontNotice message={notice} /> : null}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <HintSpot id="sources">
