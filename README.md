@@ -4,7 +4,7 @@ Catalog, live type tester, MCP service, and x402 commercial licensing for [Xerog
 
 1,376 original typefaces, pulled from DaFont. Personal use remains donationware. Unlimited commercial use is **US$95 USDC per font per agent**, or **US$65,000 USDC for the entire catalog for one agent**, settled with [x402](https://www.x402.org).
 
-Download counts are aggregated from DaFont, FontSpace, and WebFontFree. Every face links to FFonts, Fonts2u, FontGet, WhatFontIs, and 1001 Free Fonts, plus FontSpace, BlogFonts, and Hey Fonts where listed.
+Download counts are aggregated from DaFont, FontSpace, and WebFontFree. Every face links to FFonts, Fonts2u, FontGet, WhatFontIs, and 1001 Free Fonts, plus FontSpace, BlogFonts, and Hey Fonts where listed. The font files themselves, including variations, live in the public repository [maximusmaximus/xerographer-fonts](https://github.com/maximusmaximus/xerographer-fonts). Copyright © Max Infeld. Commercial licensing: maxinfeld@gmail.com.
 
 ## Humans
 

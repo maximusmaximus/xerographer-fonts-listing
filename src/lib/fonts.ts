@@ -1,6 +1,6 @@
 import raw from "../data/fonts.json" with { type: "json" };
 import listingRaw from "../data/listings.json" with { type: "json" };
-import { DAFONT_AUTHOR, DESIGNER_URL, LICENSE_USD } from "./constants.ts";
+import { DAFONT_AUTHOR, DESIGNER_URL, GITHUB_FONTS_REPO, LICENSE_USD } from "./constants.ts";
 
 export type FontRecord = {
   id: number;
@@ -55,6 +55,7 @@ export function largeFontNotice(font: Pick<FontRecord, "size">): string | null {
 
 export type HostId =
   | "dafont"
+  | "github"
   | "fontspace"
   | "blogfonts"
   | "webfontfree"
@@ -147,6 +148,24 @@ export function totalDownloadsFor(font: FontRecord): number {
   return font.downloads + extraDownloads(font.slug);
 }
 
+export function repoPart(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "misc"
+  );
+}
+
+export function fontRepoPath(font: Pick<FontRecord, "slug" | "category" | "subcategory">): string {
+  return `fonts/${repoPart(font.category)}/${repoPart(font.subcategory)}/${font.slug}`;
+}
+
+export function githubFontUrl(font: Pick<FontRecord, "slug" | "category" | "subcategory">): string {
+  return `${GITHUB_FONTS_REPO}/tree/main/${fontRepoPath(font)}`;
+}
+
 export function previewUrlFor(slug: string): string {
   const a = slug[0] ?? "x";
   const b = slug[1] ?? a;
@@ -158,8 +177,9 @@ export function withSources(font: FontRecord): FontWithSources {
   const extra = extraBySlug[font.slug] ?? {};
   const hosts: HostListing[] = [
     { id: "dafont", name: "DaFont", url: dafontUrl, downloads: font.downloads },
+    { id: "github", name: "GitHub", url: githubFontUrl(font) },
   ];
-  const seen = new Set<HostId>(["dafont"]);
+  const seen = new Set<HostId>(["dafont", "github"]);
   for (const site of listingData.sites) {
     if (seen.has(site.id)) continue;
     const hit = extra[site.id];

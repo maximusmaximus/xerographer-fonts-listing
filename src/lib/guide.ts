@@ -100,7 +100,7 @@ export const HINTS: Record<HintId, Hint> = {
   sources: {
     id: "sources",
     title: "Where it lives",
-    body: "Every host that lists this face, with download counts, plus the zip and the designer page.",
+    body: "Every host that lists this face, the GitHub folder with the font files, plus the zip and the designer page.",
   },
   agents: {
     id: "agents",

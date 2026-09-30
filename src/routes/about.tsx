@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/layout";
-import { CATALOG_LICENSE_USD, LICENSE_USD, usdLabel } from "@/lib/constants";
+import { CATALOG_LICENSE_USD, GITHUB_FONTS_REPO, LICENSE_USD, usdLabel } from "@/lib/constants";
 import { STATS } from "@/lib/fonts";
 import { formatDownloads } from "@/lib/utils";
 
@@ -63,7 +63,8 @@ function About() {
           <Li href="https://www.whatfontis.com/" label="WhatFontIs" detail="Linked on every face" />
           <Li href="https://www.1001freefonts.com/designer-xerographer-fonts-fontlisting.php" label="1001 Free Fonts" detail="Designer listing" />
           <Li href="https://www.flickr.com/photos/maximusmaximus/" label="Flickr" detail="Photostream" />
-          <Li href="https://github.com/maximusmaximus" label="GitHub" detail="maximusmaximus" />
+          <Li href={GITHUB_FONTS_REPO} label="GitHub" detail="Every face and variation, copyright Max Infeld" />
+          <Li href="https://github.com/maximusmaximus" label="GitHub profile" detail="maximusmaximus" />
         </ul>
       </article>
     </PageShell>

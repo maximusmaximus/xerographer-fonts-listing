@@ -4,6 +4,8 @@ export const CATALOG_SLUG = "catalog";
 export const CATALOG_FONT_NAME = "Xerographer Fonts — entire catalog";
 export const DAFONT_AUTHOR = "https://www.dafont.com/max-infeld.d3584";
 export const DESIGNER_URL = "https://maxi.grok.me";
+export const CATALOG_SITE = "https://fonts.grok.me";
+export const GITHUB_FONTS_REPO = "https://github.com/maximusmaximus/xerographer-fonts";
 
 export const LICENSE_PERMISSION_FONT =
   "The licensee is granted unlimited commercial use of this typeface in the licensee's own work, subject to the terms: the font files may not be resold or redistributed, and the typeface may not be edited or used to create a derivative font without written permission.";

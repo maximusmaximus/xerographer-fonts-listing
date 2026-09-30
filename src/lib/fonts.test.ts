@@ -5,6 +5,7 @@ import {
   categoryTree,
   formatFontSize,
   getFont,
+  githubFontUrl,
   isLargeFontFile,
   LARGE_FONT_BYTES,
   largeFontNotice,
@@ -128,5 +129,33 @@ describe("font catalog", () => {
     assert.ok(flagged.length >= 4);
     assert.ok(flagged.length < allFonts().length / 10);
     assert.ok(flagged.every((f) => (parseFontSizeBytes(f.size) ?? 0) >= LARGE_FONT_BYTES));
+  });
+
+  it("links every face to its folder in the public font repository", () => {
+    assert.equal(
+      githubFontUrl(getFont("funsized")!),
+      "https://github.com/maximusmaximus/xerographer-fonts/tree/main/fonts/fancy/comic/funsized",
+    );
+    assert.equal(
+      githubFontUrl(getFont("finethings")!),
+      "https://github.com/maximusmaximus/xerographer-fonts/tree/main/fonts/fancy/eroded/finethings",
+    );
+    assert.equal(
+      githubFontUrl(getFont("epicenter")!),
+      "https://github.com/maximusmaximus/xerographer-fonts/tree/main/fonts/techno/sci-fi/epicenter",
+    );
+    const fun = withSources(getFont("funsized")!);
+    assert.equal(
+      fun.hosts.find((h) => h.id === "github")?.url,
+      "https://github.com/maximusmaximus/xerographer-fonts/tree/main/fonts/fancy/comic/funsized",
+    );
+    assert.equal(
+      githubFontUrl({ slug: "example", category: "Foreign look", subcategory: "Chinese, Jpn" }),
+      "https://github.com/maximusmaximus/xerographer-fonts/tree/main/fonts/foreign-look/chinese-jpn/example",
+    );
+    assert.equal(
+      githubFontUrl({ slug: "example", category: "Fancy", subcategory: "Stencil, Army" }),
+      "https://github.com/maximusmaximus/xerographer-fonts/tree/main/fonts/fancy/stencil-army/example",
+    );
   });
 });

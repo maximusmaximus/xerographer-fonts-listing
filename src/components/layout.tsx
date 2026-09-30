@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Moon, Sun } from "lucide-react";
+import { Github, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { GuideToggle, HintSpot } from "@/components/guide";
 import { Button } from "@/components/ui/button";
+import { GITHUB_FONTS_REPO } from "@/lib/constants";
 import { pickHeaderFont } from "@/lib/fonts";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,14 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <a
+            href={GITHUB_FONTS_REPO}
+            className="inline-flex h-11 items-center gap-1.5 px-1.5 text-xs text-fg-muted transition-colors hover:text-fg sm:px-3 sm:text-sm"
+            aria-label="GitHub font files"
+          >
+            <Github className="size-4" aria-hidden />
+            <span className="hidden sm:inline">GitHub</span>
+          </a>
           <GuideToggle />
           <ThemeToggle />
         </nav>
@@ -115,6 +124,9 @@ export function SiteFooter() {
           </a>
           <a className="hover:text-fg" href="https://curio.cards">
             curio.cards
+          </a>
+          <a className="hover:text-fg" href={GITHUB_FONTS_REPO}>
+            GitHub
           </a>
           <a className="hover:text-fg" href="mailto:maxinfeld@gmail.com">
             Licensing
