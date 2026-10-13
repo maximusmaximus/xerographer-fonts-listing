@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { mixHex } from "./color.ts";
-import { applyCase, type Align, type CaseMode } from "./specimen.ts";
+import { applyCase, wrapLines, type Align, type CaseMode, type WrappedLine } from "./specimen.ts";
 import { inkCss, paperBackground, type InkMode, type PaperMode, type TextureId } from "./surfaces.ts";
 
 export type Blend = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" | "soft-light";
@@ -151,6 +151,8 @@ export type TextLayer = LayerBase & {
   glow: number;
   glowColor: string;
   extrude: number;
+  /** Null uses the font page's face. Set when the layer picks another catalog face. */
+  fontSlug: string | null;
 };
 
 export type ShapeLayer = LayerBase & {
@@ -306,6 +308,7 @@ export function defaultTextLayer(text: string, artboard: Artboard, fill = "#f2ef
     glow: 0,
     glowColor: "#ffffff",
     extrude: 0,
+    fontSlug: null,
   };
 }
 
@@ -385,7 +388,11 @@ export function selectedLayer(doc: EditorDoc): Layer | undefined {
   return doc.layers.find((layer) => layer.id === doc.selectedId);
 }
 
-export function patchLayer(doc: EditorDoc, id: string, patch: Partial<Layer>): EditorDoc {
+export function patchLayer(
+  doc: EditorDoc,
+  id: string,
+  patch: Partial<TextLayer> | Partial<ShapeLayer> | Partial<ImageLayer>,
+): EditorDoc {
   return {
     ...doc,
     layers: doc.layers.map((layer) => (layer.id === id ? ({ ...layer, ...patch } as Layer) : layer)),
@@ -394,6 +401,74 @@ export function patchLayer(doc: EditorDoc, id: string, patch: Partial<Layer>): E
 
 export function displayText(layer: TextLayer): string {
   return applyCase(layer.text, layer.caseMode) || "Type something";
+}
+
+export function textFaceSlug(layer: TextLayer, pageSlug: string): string {
+  const chosen = layer.fontSlug?.trim();
+  return chosen || pageSlug;
+}
+
+export function faceFamily(slug: string): string {
+  return `xf-${slug}`;
+}
+
+/** Canvas font shorthand. Quoted, and never a CSS var() — canvas ignores those and falls back to 10px sans-serif. */
+export function canvasFont(size: number, family: string): string {
+  const safe = family.replace(/["\\]/g, "").trim() || "sans-serif";
+  const px = Number.isFinite(size) ? Math.max(1, Math.round(size * 100) / 100) : 16;
+  return `${px}px "${safe}"`;
+}
+
+export function collectFaceSlugs(layers: readonly Layer[], pageSlug: string, visibleOnly = false): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const layer of layers) {
+    if (layer.type !== "text") continue;
+    if (visibleOnly && layer.hidden) continue;
+    const face = textFaceSlug(layer, pageSlug);
+    if (!face || seen.has(face)) continue;
+    seen.add(face);
+    out.push(face);
+  }
+  return out;
+}
+
+export function layerFontFamily(layer: Layer, pageSlug: string, ready?: ReadonlySet<string>): string {
+  if (layer.type !== "text") return "var(--font-display)";
+  const face = textFaceSlug(layer, pageSlug);
+  if (ready && !ready.has(face)) return "var(--font-display)";
+  return `"${faceFamily(face)}", var(--font-display)`;
+}
+
+export function assignTextFace(pageSlug: string, faceSlug: string, faceName: string): Pick<TextLayer, "fontSlug" | "name"> {
+  return {
+    fontSlug: !faceSlug || faceSlug === pageSlug ? null : faceSlug,
+    name: faceName,
+  };
+}
+
+export function layoutTypeLines(text: string, maxWidth: number, measure: (value: string) => number): WrappedLine[] {
+  const width = Math.max(maxWidth, 1);
+  const rough = wrapLines(text, width, measure);
+  const lines: WrappedLine[] = [];
+  for (const line of rough) {
+    if (!line.text || measure(line.text) <= width + 0.5) {
+      lines.push(line);
+      continue;
+    }
+    let chunk = "";
+    for (const ch of line.text) {
+      const next = chunk + ch;
+      if (chunk && measure(next) > width) {
+        lines.push({ text: chunk, lastInParagraph: false });
+        chunk = ch;
+      } else {
+        chunk = next;
+      }
+    }
+    lines.push({ text: chunk, lastInParagraph: line.lastInParagraph });
+  }
+  return lines.length ? lines : [{ text: "", lastInParagraph: true }];
 }
 
 export function layerBox(layer: Layer): Box {

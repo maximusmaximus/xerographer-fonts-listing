@@ -13,6 +13,7 @@ import {
   CaseLower,
   CaseSensitive,
   CaseUpper,
+  Check,
   ChevronLeft,
   Circle,
   Copy,
@@ -50,7 +51,7 @@ import { GuideToggle, HintSpot } from "@/components/guide";
 import { ThemeToggle } from "@/components/layout";
 import { ShareComposition } from "@/components/share-composition";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { currentTourStep, useGuide } from "@/lib/guide";
 import {
   BLENDS,
@@ -62,12 +63,16 @@ import {
   applyHandleResize,
   artboardSceneStyle,
   artboardStyle,
+  assignTextFace,
   canvasBlend,
+  canvasFont,
   cloneLayer,
+  collectFaceSlugs,
   defaultImageLayer,
   defaultShape,
   defaultTextLayer,
   displayText,
+  faceFamily,
   fitPad,
   fitScale,
   handleCursor,
@@ -77,8 +82,10 @@ import {
   layerBox,
   layerCenter,
   layerCss,
+  layerFontFamily,
   layerAffine,
   layerMatrix3d,
+  layoutTypeLines,
   matchDepthLook,
   extrusionOffset,
   patchLayer,
@@ -87,6 +94,7 @@ import {
   scaleLayers,
   selectedLayer,
   snapValue,
+  textFaceSlug,
   type AlignTo,
   type Artboard,
   type Box,
@@ -101,7 +109,9 @@ import {
 import { compositionHref, compositionOgHref, serializeComposition } from "@/lib/font-search";
 import { mixHex } from "@/lib/color";
 import { downloadBlob } from "@/lib/specimen-render.ts";
-import { fileStem } from "@/lib/specimen.ts";
+import { lineOriginX, shouldJustify, wordGap, fileStem } from "@/lib/specimen.ts";
+import { filterFonts, getFont, type FontRecord } from "@/lib/fonts";
+import { spinChar } from "@/lib/spin-char";
 import {
   ATMOSPHERES,
   INK_MODES,
@@ -137,6 +147,42 @@ const DEFAULT_ARTBOARD: Artboard = {
   perspectiveX: 50,
   perspectiveY: 50,
 };
+
+const faceLoads = new Map<string, Promise<void>>();
+
+function ensureFace(slug: string): Promise<void> {
+  const cached = faceLoads.get(slug);
+  if (cached) return cached;
+  const job = (async () => {
+    const family = faceFamily(slug);
+    const known = [...document.fonts].some((face) => face.family.replace(/["']/g, "") === family && face.status === "loaded");
+    if (!known) {
+      const face = new FontFace(family, `url(/api/font-file/${encodeURIComponent(slug)})`);
+      document.fonts.add(await face.load());
+    }
+    await document.fonts.load(canvasFont(64, family));
+  })().catch((err: unknown) => {
+    faceLoads.delete(slug);
+    throw err;
+  });
+  faceLoads.set(slug, job);
+  return job;
+}
+
+async function prepareFaces(slugs: string[]) {
+  const failed: string[] = [];
+  await Promise.all(
+    slugs.map(async (slug) => {
+      try {
+        await ensureFace(slug);
+      } catch {
+        failed.push(getFont(slug)?.name ?? slug);
+      }
+    }),
+  );
+  if (failed.length) throw new Error(`Could not load ${failed.join(", ")} for export`);
+  await document.fonts.ready;
+}
 
 export function FontPlayground({
   slug,
@@ -211,6 +257,8 @@ export function FontPlayground({
   const [tool, setTool] = useState<Tool>("select");
   const [panel, setPanel] = useState<Panel>("type");
   const [ready, setReady] = useState(false);
+  const [readySlugs, setReadySlugs] = useState<ReadonlySet<string>>(() => new Set());
+  const [facePicker, setFacePicker] = useState<string | null>(null);
   const [scale, setScale] = useState(0.4);
   const [zoomMode, setZoomMode] = useState<"fit" | "manual">("fit");
   const [snap, setSnap] = useState(true);
@@ -245,14 +293,19 @@ export function FontPlayground({
     return () => window.removeEventListener("keydown", onKey);
   }, [inspectOpen, moreOpen]);
 
+  const neededFaces = useMemo(() => collectFaceSlugs(doc.layers, slug).join("\n"), [doc.layers, slug]);
+
   useEffect(() => {
     let cancelled = false;
-    const face = new FontFace(`xf-${slug}`, `url(/api/font-file/${slug})`);
-    face
-      .load()
-      .then((loaded) => {
+    void ensureFace(slug)
+      .then(() => {
         if (cancelled) return;
-        document.fonts.add(loaded);
+        setReadySlugs((prev) => {
+          if (prev.has(slug)) return prev;
+          const next = new Set(prev);
+          next.add(slug);
+          return next;
+        });
         setReady(true);
       })
       .catch(() => undefined);
@@ -260,6 +313,38 @@ export function FontPlayground({
       cancelled = true;
     };
   }, [slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const extras = neededFaces.split("\n").filter((item) => item && item !== slug);
+    if (!extras.length) return;
+    void Promise.all(
+      extras.map(async (item) => {
+        try {
+          await ensureFace(item);
+          return item;
+        } catch {
+          return null;
+        }
+      }),
+    ).then((ok) => {
+      if (cancelled) return;
+      setReadySlugs((prev) => {
+        const next = new Set(prev);
+        let changed = false;
+        for (const item of ok) {
+          if (item && !next.has(item)) {
+            next.add(item);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [neededFaces, slug]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -277,7 +362,6 @@ export function FontPlayground({
   }, [doc.artboard.width, doc.artboard.height, zoomMode]);
 
   const selected = selectedLayer(doc);
-  const fontFamily = ready ? `xf-${slug}, var(--font-display)` : "var(--font-display)";
   const textLayer = selected?.type === "text" ? selected : doc.layers.find((l): l is TextLayer => l.type === "text");
   const activeTool = space.current ? "hand" : tool;
 
@@ -353,15 +437,30 @@ export function FontPlayground({
 
   function addTextAt(x?: number, y?: number) {
     const layer = defaultTextLayer("Type here", doc.artboard, textLayer?.fill ?? "#f2efe6");
+    const textCount = doc.layers.filter((item) => item.type === "text").length;
     if (x != null && y != null) {
-      layer.x = Math.round(x);
-      layer.y = Math.round(y);
+      layer.x = Math.round(Math.max(0, Math.min(x, doc.artboard.width - 40)));
+      layer.y = Math.round(Math.max(0, Math.min(y, doc.artboard.height - 40)));
       layer.w = Math.round(doc.artboard.width * 0.6);
+    } else if (textCount > 0) {
+      const step = Math.round(layer.fontSize * layer.leading + 16);
+      layer.y = Math.min(doc.artboard.height - layer.fontSize * 2, layer.y + textCount * step);
     }
     commit({ ...doc, layers: [...doc.layers, layer], selectedId: layer.id });
     setTool("select");
     setPanel("type");
-    setEditingId(layer.id);
+    setInspectOpen(true);
+    setEditingId(null);
+    setFacePicker(layer.id);
+  }
+
+  function applyFace(layerId: string, faceSlug: string, faceName: string) {
+    const current = docRef.current;
+    if (!current) return;
+    commit(patchLayer(current, layerId, assignTextFace(slug, faceSlug, faceName)));
+    setFacePicker(null);
+    setPanel("type");
+    setEditingId(layerId);
   }
 
   function onPickImage(file: File) {
@@ -665,6 +764,7 @@ export function FontPlayground({
         if (!typing(e.target)) e.preventDefault();
       }
       if (typing(e.target)) return;
+      if (facePicker) return;
       const current = docRef.current;
       if (!current) return;
       const sel = selectedLayer(current);
@@ -720,7 +820,7 @@ export function FontPlayground({
     setBusy(kind);
     setNote(null);
     try {
-      const blob = await snapshotDoc(doc, fontFamily, kind);
+      const blob = await snapshotDoc(doc, slug, kind);
       downloadBlob(blob, `${fileStem(slug)}.${kind === "jpg" ? "jpg" : "png"}`);
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Could not export");
@@ -733,8 +833,10 @@ export function FontPlayground({
     setBusy("svg");
     setNote(null);
     try {
-      const svg = serializeBoardSvg(doc, fontFamily);
+      const svg = await serializeBoardSvg(doc, slug);
       downloadBlob(new Blob([svg], { type: "image/svg+xml" }), `${fileStem(slug)}.svg`);
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : "Could not export");
     } finally {
       setBusy(null);
     }
@@ -760,6 +862,11 @@ export function FontPlayground({
       applyLook={applyLook}
       setDoc={setDoc}
       setPanel={setPanel}
+      pageSlug={slug}
+      pageName={name}
+      onPickFace={() => {
+        if (selected?.type === "text") setFacePicker(selected.id);
+      }}
     />
   );
 
@@ -899,7 +1006,9 @@ export function FontPlayground({
                       key={layer.id}
                       layer={layer}
                       artboard={doc.artboard}
-                      fontFamily={fontFamily}
+                      pageSlug={slug}
+                      fontFamily={layerFontFamily(layer, slug, readySlugs)}
+                      faceReady={layer.type !== "text" || readySlugs.has(textFaceSlug(layer, slug))}
                       selected={layer.id === doc.selectedId}
                       editing={layer.id === editingId}
                       onPointerDown={(ev) => onLayerPointerDown(ev, layer)}
@@ -975,6 +1084,22 @@ export function FontPlayground({
           </InspectorChrome>
         </aside>
       </div>
+      {facePicker ? (
+        <FontFaceSheet
+          pageSlug={slug}
+          pageName={name}
+          currentSlug={(() => {
+            const layer = doc.layers.find((item) => item.id === facePicker);
+            return layer?.type === "text" ? textFaceSlug(layer, slug) : slug;
+          })()}
+          onClose={() => {
+            const id = facePicker;
+            setFacePicker(null);
+            setEditingId(id);
+          }}
+          onPick={(font) => applyFace(facePicker, font.slug, font.name)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1097,6 +1222,9 @@ function InspectorFields({
   applyLook,
   setDoc,
   setPanel,
+  pageSlug,
+  pageName,
+  onPickFace,
 }: {
   panel: Panel;
   doc: EditorDoc;
@@ -1109,6 +1237,9 @@ function InspectorFields({
   applyLook: (look: DepthLook) => void;
   setDoc: (doc: EditorDoc) => void;
   setPanel: (panel: Panel) => void;
+  pageSlug: string;
+  pageName: string;
+  onPickFace: () => void;
 }) {
   return (
     <>
@@ -1228,7 +1359,7 @@ function InspectorFields({
       ) : null}
 
       {panel === "type" && selected?.type === "text" ? (
-        <TypeInspect layer={selected} onChange={updateSelected} />
+        <TypeInspect layer={selected} pageSlug={pageSlug} pageName={pageName} onChange={updateSelected} onPickFace={onPickFace} />
       ) : null}
       {panel === "type" && selected && selected.type !== "text" ? (
         <ShapeInspect layer={selected} onChange={updateSelected} />
@@ -1318,7 +1449,9 @@ function TransformFrame({
 function LayerView({
   layer,
   artboard,
+  pageSlug,
   fontFamily,
+  faceReady,
   editing,
   onPointerDown,
   onPointerMove,
@@ -1328,7 +1461,9 @@ function LayerView({
 }: {
   layer: Layer;
   artboard: Artboard;
+  pageSlug: string;
   fontFamily: string;
+  faceReady: boolean;
   selected: boolean;
   editing: boolean;
   onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
@@ -1339,10 +1474,24 @@ function LayerView({
 }) {
   const style = layerCss(layer, fontFamily, artboard);
   if (layer.type === "text") {
+    if (!faceReady) {
+      return (
+        <div
+          data-layer={layer.id}
+          data-font={textFaceSlug(layer, pageSlug)}
+          aria-busy="true"
+          className="flex items-center justify-center"
+          style={{ ...style, fontFamily: "var(--font-display)" }}
+        >
+          <span className="glyph-spin select-none text-[1em] leading-none">{spinChar(displayText(layer), textFaceSlug(layer, pageSlug))}</span>
+        </div>
+      );
+    }
     if (editing) {
       return (
         <TextEdit
           layer={layer}
+          face={textFaceSlug(layer, pageSlug)}
           style={style}
           onEditEnd={onEditEnd}
         />
@@ -1351,6 +1500,7 @@ function LayerView({
     return (
       <p
         data-layer={layer.id}
+        data-font={textFaceSlug(layer, pageSlug)}
         data-depth={hasDepth(layer) ? "1" : "0"}
         className="cursor-move select-none"
         style={style}
@@ -1390,10 +1540,12 @@ function LayerView({
 
 function TextEdit({
   layer,
+  face,
   style,
   onEditEnd,
 }: {
   layer: TextLayer;
+  face: string;
   style: CSSProperties;
   onEditEnd: (text: string) => void;
 }) {
@@ -1412,6 +1564,7 @@ function TextEdit({
     <p
       ref={ref}
       data-layer={layer.id}
+      data-font={face}
       contentEditable
       suppressContentEditableWarning
       className="cursor-text outline outline-2 outline-accent"
@@ -1570,9 +1723,31 @@ function TransformInspect({
   );
 }
 
-function TypeInspect({ layer, onChange }: { layer: TextLayer; onChange: (patch: Partial<TextLayer>) => void }) {
+function TypeInspect({
+  layer,
+  pageSlug,
+  pageName,
+  onChange,
+  onPickFace,
+}: {
+  layer: TextLayer;
+  pageSlug: string;
+  pageName: string;
+  onChange: (patch: Partial<TextLayer>) => void;
+  onPickFace: () => void;
+}) {
+  const face = textFaceSlug(layer, pageSlug);
+  const faceName = face === pageSlug ? pageName : (getFont(face)?.name ?? face);
   return (
     <div className="space-y-3">
+      <button
+        type="button"
+        onClick={onPickFace}
+        className="flex h-11 w-full items-center justify-between gap-3 rounded-sm bg-bg-subtle px-3 text-left"
+      >
+        <span className="text-xs uppercase tracking-[0.16em] text-fg-muted">Face</span>
+        <span className="min-w-0 truncate text-sm text-fg">{faceName}</span>
+      </button>
       <Textarea value={layer.text} rows={3} aria-label="Layer text" onChange={(e) => onChange({ text: e.target.value })} />
       <RangeStrip label="Size" min={18} max={320} step={1} value={layer.fontSize} display={`${layer.fontSize}`} onChange={(fontSize) => onChange({ fontSize })} />
       <RangeStrip label="Track" min={-0.08} max={0.28} step={0.01} value={layer.tracking} display={layer.tracking.toFixed(2)} onChange={(tracking) => onChange({ tracking })} />
@@ -1757,8 +1932,10 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
   );
 }
 
-async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jpg"): Promise<Blob> {
+async function snapshotDoc(doc: EditorDoc, pageSlug: string, kind: "png" | "jpg"): Promise<Blob> {
   const { width, height } = doc.artboard;
+  const faces = collectFaceSlugs(doc.layers, pageSlug, true);
+  await prepareFaces(faces);
   const canvas = document.createElement("canvas");
   const outScale = Math.min(2, 4096 / Math.max(width, height));
   canvas.width = Math.max(1, Math.round(width * outScale));
@@ -1787,32 +1964,7 @@ async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jp
     ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
     applyLayerDepth(ctx, layer, doc.artboard);
     if (layer.type === "text") {
-      ctx.font = `${layer.fontSize}px ${fontFamily}`;
-      ctx.textAlign = layer.align === "center" ? "center" : layer.align === "right" ? "right" : "left";
-      ctx.textBaseline = "top";
-      const lines = displayText(layer).split("\n");
-      const origin = layer.align === "center" ? 0 : layer.align === "right" ? box.w / 2 : -box.w / 2;
-      const paint = (fill: string, dx: number, dy: number) => {
-        ctx.fillStyle = fill;
-        lines.forEach((line, i) => {
-          ctx.fillText(line, origin + dx, -box.h / 2 + i * layer.fontSize * layer.leading + dy, box.w);
-        });
-      };
-      if (layer.extrude > 0) {
-        const steps = Math.min(40, Math.round(layer.extrude));
-        for (let i = steps; i >= 1; i -= 1) {
-          const offset = extrusionOffset(layer, doc.artboard, i);
-          paint(mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48), offset.x, offset.y);
-        }
-      }
-      if (layer.shadowBlur || layer.shadowX || layer.shadowY) {
-        ctx.shadowOffsetX = layer.shadowX;
-        ctx.shadowOffsetY = layer.shadowY;
-        ctx.shadowBlur = layer.shadowBlur;
-        ctx.shadowColor = layer.shadowColor;
-      }
-      paint(layer.fill, 0, 0);
-      ctx.shadowColor = "transparent";
+      drawTextLayer(ctx, layer, box, doc.artboard, pageSlug);
     } else if (layer.type === "rect" || layer.type === "ellipse") {
       ctx.fillStyle = layer.fill;
       if (layer.shadowBlur || layer.shadowX || layer.shadowY) {
@@ -1849,6 +2001,115 @@ async function snapshotDoc(doc: EditorDoc, fontFamily: string, kind: "png" | "jp
   return out;
 }
 
+function setTracking(ctx: CanvasRenderingContext2D, px: number) {
+  const tagged = ctx as CanvasRenderingContext2D & { letterSpacing?: string };
+  if ("letterSpacing" in tagged) tagged.letterSpacing = `${px}px`;
+}
+
+function drawTextLayer(
+  ctx: CanvasRenderingContext2D,
+  layer: TextLayer,
+  box: Box,
+  artboard: Artboard,
+  pageSlug: string,
+) {
+  const family = faceFamily(textFaceSlug(layer, pageSlug));
+  const trackingPx = layer.tracking * layer.fontSize;
+  ctx.font = canvasFont(layer.fontSize, family);
+  setTracking(ctx, trackingPx);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  const measure = (value: string) => ctx.measureText(value || "").width;
+  const lines = layoutTypeLines(displayText(layer), box.w, measure);
+  const lh = layer.fontSize * layer.leading;
+  const rows = lines.map((line, i) => {
+    const y = -box.h / 2 + i * lh;
+    if (shouldJustify(layer.align, line)) {
+      const words = line.text.split(/\s+/).filter(Boolean);
+      const gap = wordGap(words, box.w, measure);
+      let cursor = -box.w / 2;
+      const runs = words.map((word) => {
+        const run = { text: word, x: cursor };
+        cursor += measure(word) + gap;
+        return run;
+      });
+      return { y, runs };
+    }
+    const width = measure(line.text);
+    const x = -box.w / 2 + lineOriginX(layer.align, width, box.w);
+    return { y, runs: [{ text: line.text, x }] };
+  });
+  const paint = (fill: string | CanvasGradient, dx = 0, dy = 0) => {
+    ctx.save();
+    ctx.translate(dx, dy);
+    ctx.fillStyle = fill;
+    for (const row of rows) {
+      for (const run of row.runs) {
+        if (run.text) ctx.fillText(run.text, run.x, row.y);
+      }
+    }
+    ctx.restore();
+  };
+  ctx.shadowColor = "transparent";
+  if (layer.extrude > 0) {
+    const steps = Math.min(40, Math.max(1, Math.round(layer.extrude)));
+    for (let i = steps; i >= 1; i -= 1) {
+      const offset = extrusionOffset(layer, artboard, i);
+      paint(mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48), offset.x, offset.y);
+    }
+  }
+  if (layer.glow > 0) {
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = layer.glow;
+    ctx.shadowColor = layer.glowColor;
+    paint(layer.fill);
+  }
+  if (layer.shadowBlur || layer.shadowX || layer.shadowY) {
+    ctx.shadowOffsetX = layer.shadowX;
+    ctx.shadowOffsetY = layer.shadowY;
+    ctx.shadowBlur = layer.shadowBlur;
+    ctx.shadowColor = layer.shadowColor;
+    paint(layer.fill);
+  }
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  if (layer.strokeWidth > 0) {
+    ctx.lineJoin = "round";
+    ctx.miterLimit = 2;
+    ctx.lineWidth = layer.strokeWidth;
+    ctx.strokeStyle = layer.strokeColor;
+    for (const row of rows) {
+      for (const run of row.runs) {
+        if (run.text) ctx.strokeText(run.text, run.x, row.y);
+      }
+    }
+  }
+  paint(textInk(ctx, layer, box));
+}
+
+function textInk(ctx: CanvasRenderingContext2D, layer: TextLayer, box: Box): string | CanvasGradient {
+  if (layer.ink === "solid") return layer.fill;
+  if (layer.ink === "radial") {
+    const g = ctx.createRadialGradient(-box.w * 0.2, -box.h * 0.3, 4, 0, 0, Math.max(box.w, box.h) * 0.7);
+    g.addColorStop(0, layer.fill2);
+    g.addColorStop(1, layer.fill);
+    return g;
+  }
+  const rad = (layer.angle * Math.PI) / 180;
+  const g = ctx.createLinearGradient(
+    (-box.w / 2) * Math.cos(rad),
+    (-box.h / 2) * Math.sin(rad),
+    (box.w / 2) * Math.cos(rad),
+    (box.h / 2) * Math.sin(rad),
+  );
+  g.addColorStop(0, layer.fill);
+  g.addColorStop(1, layer.fill2);
+  return g;
+}
+
 function applyLayerDepth(ctx: CanvasRenderingContext2D, layer: Layer, artboard: Artboard) {
   const { a, b, c, d } = layerAffine(layer, artboard);
   ctx.transform(a, b, c, d, 0, 0);
@@ -1872,9 +2133,14 @@ function loadImg(url: string): Promise<HTMLImageElement> {
   });
 }
 
-function serializeBoardSvg(doc: EditorDoc, fontFamily: string): string {
+async function serializeBoardSvg(doc: EditorDoc, pageSlug: string): Promise<string> {
   const { artboard } = doc;
+  const slugs = collectFaceSlugs(doc.layers, pageSlug, true);
+  await prepareFaces(slugs);
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  const faceCss = (await Promise.all(slugs.map((item) => embedFace(item)))).join("");
   const bg = paperBackground(artboard.bg, artboard.bg2, artboard.paper, artboard.angle, "none");
+  const defs: string[] = [];
   const layers = doc.layers
     .filter((l) => !l.hidden)
     .map((layer) => {
@@ -1883,33 +2149,232 @@ function serializeBoardSvg(doc: EditorDoc, fontFamily: string): string {
       const cx = box.x + box.w / 2;
       const cy = box.y + box.h / 2;
       const wrap = (inner: string) =>
-        `<g transform="translate(${cx} ${cy}) matrix(${a} ${b} ${c} ${d} 0 0) translate(${-cx} ${-cy})">${inner}</g>`;
+        `<g opacity="${layer.opacity}" transform="translate(${cx} ${cy}) matrix(${a} ${b} ${c} ${d} 0 0) translate(${-cx} ${-cy})">${inner}</g>`;
       if (layer.type === "text") {
-        const fill = layer.ink === "solid" ? layer.fill : layer.fill;
-        const text = escapeXml(displayText(layer));
-        let extra = "";
-        if (layer.extrude > 0) {
-          const steps = Math.min(40, Math.round(layer.extrude));
-          extra = Array.from({ length: steps }, (_, idx) => {
-            const i = steps - idx;
-            const offset = extrusionOffset(layer, artboard, i);
-            const shade = mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48);
-            return `<text x="${layer.x + offset.x}" y="${layer.y + layer.fontSize + offset.y}" fill="${shade}" font-size="${layer.fontSize}" font-family="${escapeXml(fontFamily)}" letter-spacing="${layer.tracking}em" opacity="${layer.opacity}">${text}</text>`;
-          }).join("");
-        }
-        return wrap(`${extra}<text x="${layer.x}" y="${layer.y + layer.fontSize}" fill="${fill}" font-size="${layer.fontSize}" font-family="${escapeXml(fontFamily)}" letter-spacing="${layer.tracking}em" opacity="${layer.opacity}">${text}</text>`);
+        const built = svgTextLayer(layer, artboard, pageSlug, measureCtx);
+        if (built.defs) defs.push(built.defs);
+        return wrap(built.body);
       }
       if (layer.type === "ellipse") {
-        return wrap(`<ellipse cx="${layer.x + layer.w / 2}" cy="${layer.y + layer.h / 2}" rx="${layer.w / 2}" ry="${layer.h / 2}" fill="${layer.fill}" opacity="${layer.opacity}"/>`);
+        return wrap(`<ellipse cx="${layer.x + layer.w / 2}" cy="${layer.y + layer.h / 2}" rx="${layer.w / 2}" ry="${layer.h / 2}" fill="${layer.fill}"/>`);
       }
       if (layer.type === "rect") {
-        return wrap(`<rect x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}" rx="${layer.radius}" fill="${layer.fill}" opacity="${layer.opacity}"/>`);
+        return wrap(`<rect x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}" rx="${layer.radius}" fill="${layer.fill}"/>`);
       }
       if (layer.type !== "image") return "";
-      return wrap(`<image href="${escapeXml(layer.src)}" x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}" opacity="${layer.opacity}"/>`);
+      return wrap(`<image href="${escapeXml(layer.src)}" x="${layer.x}" y="${layer.y}" width="${layer.w}" height="${layer.h}"/>`);
     })
     .join("");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${artboard.width}" height="${artboard.height}" viewBox="0 0 ${artboard.width} ${artboard.height}"><rect width="100%" height="100%" fill="${bg.backgroundColor}"/>${layers}</svg>\n`;
+  const style = faceCss ? `<defs><style><![CDATA[${faceCss}]]></style>${defs.join("")}</defs>` : defs.length ? `<defs>${defs.join("")}</defs>` : "";
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${artboard.width}" height="${artboard.height}" viewBox="0 0 ${artboard.width} ${artboard.height}">${style}<rect width="100%" height="100%" fill="${bg.backgroundColor}"/>${layers}</svg>\n`;
+}
+
+function svgTextLayer(
+  layer: TextLayer,
+  artboard: Artboard,
+  pageSlug: string,
+  measureCtx: CanvasRenderingContext2D | null,
+): { body: string; defs: string } {
+  const family = faceFamily(textFaceSlug(layer, pageSlug));
+  const box = layerBox(layer);
+  const trackingPx = layer.tracking * layer.fontSize;
+  const display = displayText(layer);
+  let lines = display.split("\n").map((text, index, all) => ({ text, lastInParagraph: index === all.length - 1 }));
+  if (measureCtx) {
+    measureCtx.font = canvasFont(layer.fontSize, family);
+    setTracking(measureCtx, trackingPx);
+    const measure = (value: string) => measureCtx.measureText(value || "").width;
+    lines = layoutTypeLines(display, box.w, measure);
+  }
+  const lh = layer.fontSize * layer.leading;
+  const anchor = layer.align === "center" ? "middle" : layer.align === "right" ? "end" : "start";
+  const quoted = escapeXml(`"${family}"`);
+  const fillId = `ink-${layer.id.replace(/[^a-z0-9_-]/gi, "")}`;
+  let fill = layer.fill;
+  let defs = "";
+  if (layer.ink === "linear") {
+    const rad = (layer.angle * Math.PI) / 180;
+    const x1 = 50 - Math.cos(rad) * 50;
+    const y1 = 50 - Math.sin(rad) * 50;
+    const x2 = 50 + Math.cos(rad) * 50;
+    const y2 = 50 + Math.sin(rad) * 50;
+    defs = `<linearGradient id="${fillId}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"><stop offset="0" stop-color="${layer.fill}"/><stop offset="1" stop-color="${layer.fill2}"/></linearGradient>`;
+    fill = `url(#${fillId})`;
+  } else if (layer.ink === "radial") {
+    defs = `<radialGradient id="${fillId}" cx="30%" cy="20%"><stop offset="0" stop-color="${layer.fill2}"/><stop offset="1" stop-color="${layer.fill}"/></radialGradient>`;
+    fill = `url(#${fillId})`;
+  }
+  const textAt = (dx: number, dy: number, paint: string, stroke: boolean) => {
+    const tspans = lines
+      .map((line, index) => {
+        const y = layer.y + dy;
+        const yAttr = index === 0 ? `y="${y}"` : `dy="${lh}"`;
+        let x = layer.x + dx;
+        let extra = "";
+        if (shouldJustify(layer.align, line)) {
+          extra = ` textLength="${box.w}" lengthAdjust="spacing"`;
+        } else if (layer.align === "center") x = layer.x + box.w / 2 + dx;
+        else if (layer.align === "right") x = layer.x + box.w + dx;
+        return `<tspan x="${x}" ${yAttr}${extra}>${escapeXml(line.text)}</tspan>`;
+      })
+      .join("");
+    const strokeAttr = stroke && layer.strokeWidth > 0
+      ? ` stroke="${layer.strokeColor}" stroke-width="${layer.strokeWidth}" paint-order="stroke fill" stroke-linejoin="round"`
+      : "";
+    return `<text fill="${paint}" font-size="${layer.fontSize}" font-family="${quoted}" letter-spacing="${trackingPx}" text-anchor="${anchor}"${strokeAttr}>${tspans}</text>`;
+  };
+  let extra = "";
+  if (layer.extrude > 0) {
+    const steps = Math.min(40, Math.max(1, Math.round(layer.extrude)));
+    extra = Array.from({ length: steps }, (_, idx) => {
+      const i = steps - idx;
+      const offset = extrusionOffset(layer, artboard, i);
+      const shade = mixHex(layer.fill, "#050505", 0.32 + (i / steps) * 0.48);
+      return textAt(offset.x, offset.y, shade, false);
+    }).join("");
+  }
+  return { body: `${extra}${textAt(0, 0, fill, true)}`, defs };
+}
+
+async function embedFace(slug: string): Promise<string> {
+  const res = await fetch(`/api/font-file/${encodeURIComponent(slug)}`);
+  if (!res.ok) throw new Error(`Could not embed ${getFont(slug)?.name ?? slug}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.byteLength < 20) throw new Error(`Could not embed ${getFont(slug)?.name ?? slug}`);
+  const type = (res.headers.get("content-type") || "font/ttf").split(";")[0] || "font/ttf";
+  const format = type.includes("woff2") ? "woff2" : type.includes("woff") ? "woff" : type.includes("otf") || type.includes("opentype") ? "opentype" : "truetype";
+  const family = faceFamily(slug);
+  return `@font-face{font-family:"${family}";src:url("data:${type};base64,${bytesToBase64(bytes)}") format("${format}");font-weight:400;font-style:normal;}`;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+
+function FontFaceSheet({
+  pageSlug,
+  pageName,
+  currentSlug,
+  onClose,
+  onPick,
+}: {
+  pageSlug: string;
+  pageName: string;
+  currentSlug: string;
+  onClose: () => void;
+  onPick: (font: FontRecord) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const rows = useMemo(() => {
+    const page = getFont(pageSlug);
+    const q = query.trim();
+    let found = filterFonts({ q, sort: q ? "name" : "popular" });
+    if (!q) found = found.filter((font) => font.category !== "Dingbats");
+    found = found.filter((font) => font.slug !== pageSlug).slice(0, 40);
+    return page ? [page, ...found] : found;
+  }, [pageSlug, query]);
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-bg/70 p-0 sm:items-center sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Choose a typeface"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="flex max-h-[min(36rem,86dvh)] w-full max-w-md flex-col rounded-t-2xl bg-bg-elevated shadow-[var(--shadow-border)] sm:rounded-2xl">
+        <div className="flex items-center gap-2 px-3 pt-3">
+          <h2 className="min-w-0 flex-1 truncate text-base text-fg">Choose a typeface</h2>
+          <button type="button" aria-label="Close typeface list" onClick={onClose} className="inline-flex size-11 items-center justify-center rounded-full text-fg hover:bg-bg-subtle">
+            <X className="size-4" />
+          </button>
+        </div>
+        <p className="px-3 pb-2 text-sm text-fg-muted">This page is {pageName}. Search the catalog to set this line in another face.</p>
+        <div className="px-3 pb-2">
+          <Input
+            autoFocus
+            value={query}
+            placeholder="Search faces"
+            aria-label="Search faces"
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                onClose();
+              }
+            }}
+          />
+        </div>
+        <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+          {rows.map((font) => {
+            const selected = font.slug === currentSlug;
+            return (
+              <li key={font.slug}>
+                <button
+                  type="button"
+                  onClick={() => onPick(font)}
+                  className={cn(
+                    "flex h-11 w-full items-center gap-3 rounded-sm px-2 text-left",
+                    selected ? "bg-accent text-accent-fg" : "hover:bg-bg-subtle",
+                  )}
+                >
+                  <FaceSample slug={font.slug} name={font.name} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm">{font.name}</span>
+                    <span className={cn("block truncate text-xs", selected ? "text-accent-fg/80" : "text-fg-muted")}>
+                      {font.slug === pageSlug ? "This page" : `${font.category} / ${font.subcategory}`}
+                    </span>
+                  </span>
+                  {selected ? <Check className="size-4 shrink-0" /> : null}
+                </button>
+              </li>
+            );
+          })}
+          {!rows.length ? <li className="px-2 py-6 text-sm text-fg-muted">No faces match that search.</li> : null}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function FaceSample({ slug, name }: { slug: string; name: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        void ensureFace(slug).then(() => setReady(true)).catch(() => undefined);
+      },
+      { rootMargin: "80px" },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [slug]);
+  return (
+    <span
+      ref={ref}
+      aria-hidden
+      className="inline-flex w-10 shrink-0 items-center justify-center text-lg leading-none"
+      style={ready ? { fontFamily: `"${faceFamily(slug)}", var(--font-display)` } : undefined}
+    >
+      {ready ? "Ag" : spinChar(name, slug)}
+    </span>
+  );
 }
 
 function escapeXml(value: string): string {

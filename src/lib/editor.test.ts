@@ -12,6 +12,12 @@ import {
   DEPTH_LOOKS,
   extrusionOffset,
   extrusionShadows,
+  faceFamily,
+  canvasFont,
+  collectFaceSlugs,
+  textFaceSlug,
+  assignTextFace,
+  layoutTypeLines,
   fitPad,
   fitScale,
   formatRatio,
@@ -216,5 +222,39 @@ describe("3D projection", () => {
       const board2 = { ...board, perspective: look.perspective, perspectiveX: look.perspectiveX, perspectiveY: look.perspectiveY };
       assert.equal(matchDepthLook(next, board2, look), true, look.id);
     }
+  });
+});
+
+describe("type faces", () => {
+  it("keeps the page face until a layer picks another", () => {
+    const text = defaultTextLayer("Hi", board);
+    assert.equal(text.fontSlug, null);
+    assert.equal(textFaceSlug(text, "funsized"), "funsized");
+    assert.equal(faceFamily("funsized"), "xf-funsized");
+    const picked = { ...text, ...assignTextFace("funsized", "crackvetica", "Crackvetica") };
+    assert.equal(picked.fontSlug, "crackvetica");
+    assert.equal(picked.name, "Crackvetica");
+    assert.equal(textFaceSlug(picked, "funsized"), "crackvetica");
+    const pageAgain = { ...picked, ...assignTextFace("funsized", "funsized", "Fun Sized") };
+    assert.equal(pageAgain.fontSlug, null);
+    const shape = defaultShape("rect", board);
+    assert.deepEqual(collectFaceSlugs([text, shape, picked], "funsized"), ["funsized", "crackvetica"]);
+    picked.hidden = true;
+    assert.deepEqual(collectFaceSlugs([picked], "funsized", true), []);
+  });
+
+  it("quotes canvas families and never passes a css variable", () => {
+    const spec = canvasFont(48, "xf-funsized");
+    assert.equal(spec, '48px "xf-funsized"');
+    assert.equal(spec.includes("var("), false);
+    assert.equal(canvasFont(48.2, 'xf-a"b').includes('"'), true);
+    assert.equal(canvasFont(Number.NaN, "xf-funsized"), '16px "xf-funsized"');
+  });
+
+  it("wraps type to the layer width, including a word wider than the box", () => {
+    const measure = (value: string) => value.length * 10;
+    const lines = layoutTypeLines("Hello there\nABCDEFGHIJ", 60, measure);
+    assert.deepEqual(lines.map((line) => line.text), ["Hello", "there", "ABCDEF", "GHIJ"]);
+    assert.deepEqual(layoutTypeLines("ABCD", 25, measure).map((line) => line.text), ["AB", "CD"]);
   });
 });
