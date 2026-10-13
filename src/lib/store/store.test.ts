@@ -24,6 +24,7 @@ import { getSetting, setSetting } from "./settings.ts";
 import { createReprintRequest, readPhoto, sniffImage, uploadClaimPhoto, purgePhotos } from "./photos.ts";
 import { resendMailer } from "./emails.ts";
 import { checkAdmin, adminAction } from "./admin.ts";
+import { copiesLeft, dailyCopyCap, reserveSlot } from "./slots.ts";
 
 const root = new URL("../../../", import.meta.url);
 
@@ -132,7 +133,7 @@ describe("signatures", () => {
 async function freshDb(): Promise<Db> {
   const pg = new PGlite();
   await pg.waitReady;
-  for (const f of ["0002_licenses.sql", "0003_store.sql"]) await pg.exec(readFileSync(new URL(`migrations/${f}`, root), "utf8"));
+  for (const f of ["0002_licenses.sql", "0003_store.sql", "0004_store_daily_slots.sql"]) await pg.exec(readFileSync(new URL(`migrations/${f}`, root), "utf8"));
   return { query: async (t, p) => (await pg.query(t, p as unknown[])).rows as never };
 }
 
@@ -152,6 +153,7 @@ async function makeHarness() {
       env: "sbx", publicBaseUrl: "https://test-copy.example", stripePriceId: "price_199",
       shippingRates: { standard: "shr_std", expedited: "shr_exp", rush: "shr_rush" },
       rpiBaseUrl: "https://rpi.invalid", replyTo: "maxinfeld@gmail.com", alertTo: "ops@example.com", emailFrom: "Store <s@example.com>",
+      dailyOrderCap: 5, dailyDollarCap: 750,
     },
     stripe: {
       checkout: {
@@ -298,18 +300,24 @@ describe("checkout + Stripe webhook -> RPI", () => {
     assert.equal(h.calls.creates.length, 0);
   });
 
-  it("holds the 6th order of the day (cap of 5) and elevated-risk orders", async () => {
+  it("sells at most 5 copies a day: the 6th checkout is refused as sold out", async () => {
     for (let i = 0; i < 5; i += 1) assert.equal((await h.checkoutAndPay()).result, "rpi_created");
-    assert.equal((await h.checkoutAndPay()).result, "held");
-    assert.equal((await h.checkoutAndPay({ risk: "elevated" })).result, "held");
+    const r = await createCheckout(h.deps);
+    assert.equal(r.status, 409);
+    assert.equal(r.body.error, "sold_out");
+    assert.equal(h.calls.sessions.length, 5);
     assert.equal(h.calls.creates.length, 5);
   });
 
-  it("holds orders over the $750 exposure cap", async () => {
-    // Rush: (102.60 + 6.99 ...) — use the stored shipping (6.99) with a low USD cap.
-    await setSetting(h.db, "MAX_RPI_EXPOSURE_USD_PER_DAY", "200");
+  it("holds elevated-risk orders", async () => {
+    assert.equal((await h.checkoutAndPay({ risk: "elevated" })).result, "held");
+    assert.equal(h.calls.creates.length, 0);
+  });
+
+  it("the dollar cap also limits copies (DAILY_DOLLAR_CAP=200 -> 1 copy)", async () => {
+    h.deps.config.dailyDollarCap = 200;
     assert.equal((await h.checkoutAndPay()).result, "rpi_created");
-    assert.equal((await h.checkoutAndPay()).result, "held");
+    assert.equal((await createCheckout(h.deps)).status, 409);
   });
 
   it("kill switch: checkout returns 503", async () => {
@@ -545,5 +553,64 @@ describe("admin", () => {
     const h = await makeHarness();
     const { token } = await h.checkoutAndPay();
     await assert.rejects(transition(h.db, token, "SHIPPED", "customer").then(() => transition(h.db, token, "PAID", "customer")));
+  });
+});
+
+describe("copies left today + reservations", () => {
+  let h: Harness;
+  beforeEach(async () => (h = await makeHarness()));
+  const left = async () => (await copiesLeft(h.db, h.deps.config, h.clock.now)).left;
+
+  it("env caps: defaults 5 / 750, configurable, bad values fall back", () => {
+    const base: Record<string, string> = {
+      STORE_ENV: "sbx", PUBLIC_BASE_URL: "https://t.example", STRIPE_SECRET_KEY: "sk_test_x", STRIPE_PRICE_ID: "p",
+      STRIPE_SHIPPING_RATE_STANDARD: "a", STRIPE_SHIPPING_RATE_EXPEDITED: "b", STRIPE_SHIPPING_RATE_RUSH: "c",
+    };
+    const c = (o: Record<string, string>) => loadStoreConfig((k) => ({ ...base, ...o })[k]).config!;
+    assert.equal(c({}).dailyOrderCap, 5);
+    assert.equal(c({}).dailyDollarCap, 750);
+    assert.equal(c({ DAILY_ORDER_CAP: "1" }).dailyOrderCap, 1);
+    assert.equal(c({ DAILY_ORDER_CAP: "abc", DAILY_DOLLAR_CAP: "-3" }).dailyOrderCap, 5);
+    assert.equal(c({ DAILY_DOLLAR_CAP: "-3" }).dailyDollarCap, 750);
+    assert.equal(dailyCopyCap({ dailyOrderCap: 5, dailyDollarCap: 750 }), 5);
+    assert.equal(dailyCopyCap({ dailyOrderCap: 10, dailyDollarCap: 750 }), 6); // $120.55 each at Standard
+  });
+
+  it("counts paid and reserved orders; an abandoned checkout frees its copy after 31 min", async () => {
+    assert.equal(await left(), 5);
+    await h.checkoutAndPay();
+    assert.equal(await left(), 4);
+    await createCheckout(h.deps); // reserved, not paid
+    assert.equal(await left(), 3);
+    h.clock.now = new Date(h.clock.now.getTime() + 32 * 60_000);
+    assert.equal(await left(), 4);
+  });
+
+  it("checkout.session.expired and full refunds put the copy back", async () => {
+    await createCheckout(h.deps);
+    const token = h.calls.sessions.at(-1).metadata.order_token;
+    await handleStripeEvent(h.deps, { id: "evt_exp", type: "checkout.session.expired", data: { object: { id: "cs_test_1" } } });
+    assert.equal((await h.order(token)).state, "EXPIRED");
+    assert.equal(await left(), 5);
+    const paid = await h.checkoutAndPay();
+    assert.equal(await left(), 4);
+    await requestCancel(h.deps, await h.order(paid.token), "customer");
+    assert.equal(await left(), 5);
+  });
+
+  it("two buyers racing for the last copy: exactly one wins", async () => {
+    h.deps.config.dailyOrderCap = 1;
+    for (const id of ["o1", "o2", "o3", "o4"]) await h.db.query("insert into store_orders (id, env, state) values ($1, 'sbx', 'CHECKOUT_OPEN')", [id]);
+    const wins = await Promise.all(["o1", "o2", "o3", "o4"].map((id) => reserveSlot(h.db, h.deps.config, id, h.clock.now)));
+    assert.equal(wins.filter(Boolean).length, 1);
+  });
+
+  it("sold out until the 02:00 UTC day boundary, then back", async () => {
+    h.deps.config.dailyOrderCap = 1;
+    await h.checkoutAndPay();
+    assert.equal(await left(), 0);
+    assert.equal((await createCheckout(h.deps)).status, 409);
+    h.clock.now = new Date("2026-10-14T02:00:00Z");
+    assert.equal(await left(), 1);
   });
 });

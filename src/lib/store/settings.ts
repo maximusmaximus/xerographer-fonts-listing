@@ -26,14 +26,14 @@ export function exposureUsd(shippingCents: number): number {
   return Math.round(base * 1.1 * 100) / 100;
 }
 
-export async function capCheck(db: Db, now: Date, nextShippingCents: number) {
+export async function capCheck(db: Db, now: Date, nextShippingCents: number, caps: { dailyOrderCap: number; dailyDollarCap: number }) {
   const since = capWindowStart(now);
   const rows = await db.query<{ amount_shipping_cents: number | null }>(
     "select amount_shipping_cents from store_orders where rpi_first_sent_at >= $1",
     [since.toISOString()],
   );
-  const maxOrders = Number((await getSetting(db, "MAX_RPI_ORDERS_PER_DAY")) ?? 5);
-  const maxUsd = Number((await getSetting(db, "MAX_RPI_EXPOSURE_USD_PER_DAY")) ?? 750);
+  const maxOrders = caps.dailyOrderCap;
+  const maxUsd = caps.dailyDollarCap;
   const count = rows.length;
   const exposure = rows.reduce((s, r) => s + exposureUsd(r.amount_shipping_cents ?? 0), 0);
   const next = exposure + exposureUsd(nextShippingCents);

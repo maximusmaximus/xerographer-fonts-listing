@@ -137,7 +137,7 @@ async function onCheckoutCompleted(deps: StoreDeps, evtSession: Record<string, a
   await sendOrderConfirmation(deps, paid);
 
   const guard = await storeGuard(deps.db);
-  const cap = await capCheck(deps.db, paidAt, paid.amount_shipping_cents ?? 0);
+  const cap = await capCheck(deps.db, paidAt, paid.amount_shipping_cents ?? 0, deps.config);
   if (!guard.open || !cap.ok || risk === "elevated" || risk === "highest") {
     const why = !guard.open ? "kill switch" : !cap.ok ? `daily cap (${cap.count} orders, $${cap.exposure})` : `Radar risk ${risk}`;
     await transition(deps.db, order.id, "HELD", "system", why);

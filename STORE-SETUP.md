@@ -25,6 +25,8 @@ All are server-only. None may use a `VITE_` prefix.
 | `ADMIN_TOKEN` | **yes** | random | a different random value |
 | `ALERT_EMAIL_TO` | no | Max's ops inbox | same |
 | `STORE_REPLY_TO` | no | `maxinfeld@gmail.com` (default) | same |
+| `DAILY_ORDER_CAP` | no | optional, default `5` (set `1` to test sold-out) | optional, default `5` |
+| `DAILY_DOLLAR_CAP` | no | optional, default `750` (USD of estimated RPI cost per day) | optional, default `750` |
 | `STORE_EMAIL_FROM` | no | optional; falls back to `RESEND_FROM` | same |
 | `RESEND_API_KEY` | **yes** | existing app key (already used by license emails) | same |
 | `DATABASE_URL` | **yes** | the test copy's own Neon | live Neon |
@@ -69,7 +71,7 @@ Stale (>300 s) or wrong signatures → 401; a replayed timestamp → 409; GET �
 ## Admin
 
 `/admin/store` — enter `ADMIN_TOKEN` (kept in the tab's sessionStorage, sent as `x-admin-token`).
-Kill switch, daily caps (default 5 orders / $750), Release HELD, Cancel+Refund (with "Max override"),
+Kill switch, daily caps (env `DAILY_ORDER_CAP` / `DAILY_DOLLAR_CAP`, default 5 orders / $750; copies left today = cap minus paid or reserved orders since 02:00 UTC; a checkout holds a copy for 31 minutes), Release HELD, Cancel+Refund (with "Max override"),
 Approve/Decline reprint, Place replacement order (`-rp1`), claim photos, test emails, RPI ping.
 Sandbox only: clock override and "drop next RPI webhook".
 
@@ -80,7 +82,7 @@ Sandbox only: clock override and "drop next RPI webhook".
 
 ## Database
 
-`migrations/0003_store.sql` adds `store_*` tables only (orders, stripe/rpi event dedupe, cron replay
+`migrations/0003_store.sql` and `0004_store_daily_slots.sql` add `store_*` tables only (orders, stripe/rpi event dedupe, cron replay
 guard, reprint requests, claim photos in `bytea`, settings, audit). Applied by the existing
 `npm run db:migrate` on deploy and automatically on PGLite in dev.
 

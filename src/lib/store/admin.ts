@@ -6,6 +6,7 @@ import { rpiCreate, buildCreateBody } from "./rpi.ts";
 import { customerOrderIdFor } from "./ids.ts";
 import { requestCancel } from "./cancel.ts";
 import { totalPhotoBytes } from "./photos.ts";
+import { copiesLeft } from "./slots.ts";
 import {
   confirmationEmail, sendAlert, sendReprintDeclined, sendShipped, type OrderRow,
 } from "./emails.ts";
@@ -33,10 +34,11 @@ export async function adminSummary(deps: StoreDeps) {
   return {
     env: deps.config.env,
     ordersEnabled: (await getSetting(db, "ORDERS_ENABLED")) === "true",
-    maxOrdersPerDay: Number(await getSetting(db, "MAX_RPI_ORDERS_PER_DAY")),
-    maxExposureUsdPerDay: Number(await getSetting(db, "MAX_RPI_EXPOSURE_USD_PER_DAY")),
+    maxOrdersPerDay: deps.config.dailyOrderCap,
+    maxExposureUsdPerDay: deps.config.dailyDollarCap,
+    copies: await copiesLeft(db, deps.config, now),
     clockOverride: deps.config.env === "sbx" ? ((await getSetting(db, "clock_override")) ?? null) : null,
-    cap: await capCheck(db, now, 0),
+    cap: await capCheck(db, now, 0, deps.config),
     photoBytes: await totalPhotoBytes(db),
     orders,
     requests,
@@ -56,14 +58,6 @@ export async function adminAction(deps: StoreDeps, a: Act): Promise<{ status: nu
       await setSetting(db, "ORDERS_ENABLED", a.value === "true" ? "true" : "false");
       await audit(db, null, "admin", `ORDERS_ENABLED=${a.value}`);
       return { status: 200, body: { ok: true } };
-    case "set-caps": {
-      const [orders, usd] = String(a.value ?? "").split(",").map(Number);
-      if (!(orders! >= 0 && usd! >= 0)) return { status: 400, body: { error: "bad caps" } };
-      await setSetting(db, "MAX_RPI_ORDERS_PER_DAY", String(orders));
-      await setSetting(db, "MAX_RPI_EXPOSURE_USD_PER_DAY", String(usd));
-      await audit(db, null, "admin", `caps ${orders}/${usd}`);
-      return { status: 200, body: { ok: true } };
-    }
     case "release": {
       const o = await load();
       if (o?.state !== "HELD") return { status: 409, body: { error: "not HELD" } };

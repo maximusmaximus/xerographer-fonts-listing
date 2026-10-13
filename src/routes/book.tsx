@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useStoreStatus } from "@/lib/store-status";
 import { PageShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 
@@ -15,25 +16,26 @@ const SHIPPING = [
 ];
 
 function BookPage() {
-  const [open, setOpen] = useState<boolean | null>(null);
+  const status = useStoreStatus(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/store/status")
-      .then((r) => (r.ok ? r.json() : { open: false }))
-      .then((d: { open?: boolean }) => setOpen(!!d.open))
-      .catch(() => setOpen(false));
-  }, []);
+  const [soldOutNow, setSoldOutNow] = useState(false);
+  const open = status ? status.enabled && status.open : null;
+  const soldOut = soldOutNow || (status?.enabled === true && status.copiesLeft === 0);
 
   async function buy() {
     setBusy(true);
     setError(null);
     try {
       const r = await fetch("/api/store/checkout", { method: "POST" });
-      const d = (await r.json().catch(() => ({}))) as { url?: string };
+      const d = (await r.json().catch(() => ({}))) as { url?: string; error?: string };
       if (r.ok && d.url) {
         window.location.assign(d.url);
+        return;
+      }
+      if (r.status === 409 && d.error === "sold_out") {
+        setSoldOutNow(true);
+        setBusy(false);
         return;
       }
       setError("Temporarily unavailable. Please try again later.");
@@ -79,9 +81,16 @@ function BookPage() {
           {open === false ? (
             <p className="text-fg-muted">Temporarily unavailable.</p>
           ) : (
-            <Button size="lg" onClick={buy} disabled={busy || open === null}>
-              {busy ? "Opening checkout…" : "Buy — $199"}
-            </Button>
+            <>
+              {status?.enabled && (
+                <p className="mb-3 text-sm" data-testid="copies-left">
+                  {soldOut ? "Sold out for today, back tomorrow" : `${status.copiesLeft} of ${status.dailyCap ?? status.copiesLeft} copies left today`}
+                </p>
+              )}
+              <Button size="lg" onClick={buy} disabled={busy || open === null || soldOut}>
+                {soldOut ? "Sold out for today" : busy ? "Opening checkout…" : "Buy — $199"}
+              </Button>
+            </>
           )}
           {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
         </div>

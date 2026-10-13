@@ -2,6 +2,7 @@ import type { ShipMethod, StoreDeps } from "./types.ts";
 import { randomToken } from "./ids.ts";
 import { storeGuard } from "./settings.ts";
 import { audit } from "./state.ts";
+import { reserveSlot, releaseSlot } from "./slots.ts";
 
 export const CHECKOUT_TEXT_SHIPPING =
   "Ships to the continental US (including DC) only. No Alaska, Hawaii, US territories, or APO/FPO addresses.";
@@ -23,8 +24,15 @@ export async function createCheckout(deps: StoreDeps): Promise<{ status: number;
   if (!guard.open) return { status: 503, body: { error: "temporarily unavailable" } };
   const token = randomToken();
   await deps.db.query("insert into store_orders (id, env, state) values ($1, $2, 'CHECKOUT_OPEN')", [token, deps.config.env]);
+  const now = await deps.now();
+  if (!(await reserveSlot(deps.db, deps.config, token, now))) {
+    await deps.db.query("update store_orders set state = 'EXPIRED', last_error = 'sold out' where id = $1", [token]);
+    return { status: 409, body: { error: "sold_out", message: "Sold out for today, back tomorrow" } };
+  }
   const base = deps.config.publicBaseUrl;
-  const session = await deps.stripe.checkout.sessions.create(
+  let session: { id: string; url: string | null };
+  try {
+    session = await deps.stripe.checkout.sessions.create(
     {
       mode: "payment",
       line_items: [{ price: deps.config.stripePriceId, quantity: 1 }],
@@ -48,9 +56,16 @@ export async function createCheckout(deps: StoreDeps): Promise<{ status: number;
       payment_intent_data: { metadata: { env: deps.config.env, order_token: token } },
       success_url: `${base}/book/thanks?o=${token}`,
       cancel_url: `${base}/book`,
+      // Matches the slot reservation, so an abandoned checkout frees its copy.
+      expires_at: Math.floor(now.getTime() / 1000) + 30 * 60,
     },
     { idempotencyKey: `checkout-${token}` },
   );
+  } catch (e) {
+    await releaseSlot(deps.db, token);
+    await deps.db.query("update store_orders set state = 'EXPIRED', last_error = 'checkout create failed' where id = $1", [token]);
+    throw e;
+  }
   await deps.db.query("update store_orders set stripe_session_id = $2, updated_at = now() where id = $1", [token, session.id]);
   await audit(deps.db, token, "customer", "checkout session created", null, "CHECKOUT_OPEN");
   return { status: 200, body: { url: session.url } };

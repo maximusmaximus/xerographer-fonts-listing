@@ -62,6 +62,8 @@ export async function transition(
     [orderId, to, row.state, ...cols.map((c) => extra[c])],
   );
   if (!updated.length) return false;
+  if (to === "PAID") await db.query("update store_daily_slots set expires_at = null where order_id = $1", [orderId]);
+  if (to === "EXPIRED" || to === "CANCELLED_REFUNDED") await db.query("delete from store_daily_slots where order_id = $1", [orderId]);
   await audit(db, orderId, actor, note ?? null, row.state, to);
   return true;
 }

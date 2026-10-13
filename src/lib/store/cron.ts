@@ -74,7 +74,7 @@ export async function reconcile(deps: StoreDeps) {
 
 async function releaseDeferred(deps: StoreDeps, o: OrderRow): Promise<string> {
   const guard = await storeGuard(deps.db);
-  const cap = await capCheck(deps.db, await deps.now(), o.amount_shipping_cents ?? 0);
+  const cap = await capCheck(deps.db, await deps.now(), o.amount_shipping_cents ?? 0, deps.config);
   if (!guard.open || !cap.ok) {
     await transition(deps.db, o.id, "HELD", "cron", !guard.open ? "kill switch" : "daily cap");
     await sendAlert(deps, "Deferred order held", `Order ${o.id.slice(0, 8)} was held at release (${!guard.open ? "kill switch" : "daily cap"}).`);

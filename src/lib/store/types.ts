@@ -17,6 +17,8 @@ export interface StoreConfig {
   replyTo: string;
   alertTo: string | undefined;
   emailFrom: string;
+  dailyOrderCap: number;
+  dailyDollarCap: number;
 }
 
 export interface Mailer {

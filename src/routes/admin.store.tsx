@@ -14,6 +14,7 @@ type Summary = {
   maxExposureUsdPerDay: number;
   clockOverride: string | null;
   cap: { count: number; exposure: number };
+  copies: { cap: number; taken: number; left: number };
   photoBytes: number;
   orders: Array<Record<string, string | number | null>>;
   requests: Array<{ id: string; order_id: string; description: string; decision: string | null; photos: Array<{ id: string; mime: string; size: number; at: string; purged: boolean }> }>;
@@ -90,11 +91,7 @@ function AdminStore() {
           {data.ordersEnabled ? "Turn orders OFF" : "Turn orders ON"}
         </Button>
         <span>Today: {data.cap.count} sent, ~${data.cap.exposure}</span>
-        <span>Caps: {data.maxOrdersPerDay} orders / ${data.maxExposureUsdPerDay}</span>
-        <Button size="sm" variant="secondary" onClick={() => {
-          const v = prompt("orders,usd", `${data.maxOrdersPerDay},${data.maxExposureUsdPerDay}`);
-          if (v) void act("set-caps", { value: v });
-        }}>Edit caps</Button>
+        <span>Caps (env DAILY_ORDER_CAP / DAILY_DOLLAR_CAP): {data.maxOrdersPerDay} orders / ${data.maxExposureUsdPerDay} · copies left today: {data.copies.left}/{data.copies.cap}</span>
         <Button size="sm" variant="secondary" onClick={() => act("test-emails")}>Send test emails to ALERT_EMAIL_TO</Button>
         <Button size="sm" variant="secondary" onClick={() => act("rpi-ping")}>RPI ping</Button>
         <span>Photos stored: {(data.photoBytes / 1e6).toFixed(1)} MB</span>
