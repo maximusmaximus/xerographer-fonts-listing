@@ -16,7 +16,7 @@
     "preview:stop": "node scripts/preview.mjs stop",
     "typecheck": "tsc --noEmit",
     "check:auth": "node scripts/check-auth-invariant.mjs",
-    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/fonts.test.ts src/lib/specimen.test.ts src/lib/constants.test.ts src/lib/x402.test.ts src/lib/mcp.test.ts src/lib/font-search.test.ts src/lib/font-card.test.ts src/lib/color.test.ts src/lib/editor.test.ts src/lib/guide.test.ts",
+    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/fonts.test.ts src/lib/specimen.test.ts src/lib/constants.test.ts src/lib/x402.test.ts src/lib/mcp.test.ts src/lib/font-search.test.ts src/lib/font-card.test.ts src/lib/color.test.ts src/lib/editor.test.ts src/lib/guide.test.ts src/lib/store/store.test.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -70,6 +70,7 @@
     "react-resizable-panels": "^4.6.5",
     "recharts": "^2.13.0",
     "sonner": "^2.0.7",
+    "stripe": "^19.3.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.3.0",
     "tw-animate-css": "^1.3.4",
