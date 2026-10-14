@@ -1,6 +1,26 @@
 import JSZip from "jszip";
 import { getFont } from "./fonts";
+import { coverageFor } from "./coverage";
 import { dafontGet } from "./outbound";
+
+const REPO_RAW = "https://raw.githubusercontent.com/maximusmaximus/xerographer-fonts/main";
+
+/** Expanded faces (accents added in the repo) load from GitHub until DaFont carries the update. */
+async function loadRepoFile(slug: string): Promise<{ bytes: Uint8Array; contentType: string; filename: string } | null> {
+  const cov = coverageFor(slug);
+  if (!cov) return null;
+  try {
+    const url = `${REPO_RAW}/${cov.repoFile.split("/").map(encodeURIComponent).join("/")}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (!(isTtf(bytes) || isOtf(bytes))) return null;
+    const filename = cov.repoFile.split("/").pop() ?? `${slug}.ttf`;
+    return { bytes, contentType: contentTypeFor(filename), filename };
+  } catch {
+    return null;
+  }
+}
 
 const cache = new Map<string, { bytes: Uint8Array; contentType: string; filename: string }>();
 
@@ -8,6 +28,12 @@ export async function loadFontFile(slug: string): Promise<{ bytes: Uint8Array; c
   if (!getFont(slug)) return null;
   const hit = cache.get(slug);
   if (hit) return hit;
+
+  const fromRepo = await loadRepoFile(slug);
+  if (fromRepo) {
+    cache.set(slug, fromRepo);
+    return fromRepo;
+  }
 
   let fetched;
   try {
