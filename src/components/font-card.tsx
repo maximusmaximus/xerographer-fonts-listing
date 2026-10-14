@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { FontWithSources } from "@/lib/fonts";
+import { languageBadges } from "@/lib/coverage";
 import { fontPreviewSearch } from "@/lib/font-search";
 import { spinChar } from "@/lib/spin-char";
 import { formatDownloads } from "@/lib/utils";
@@ -113,6 +114,7 @@ export function FontCard({
             <p className="truncate text-xs text-fg-muted">
               {font.category} / {font.subcategory}
             </p>
+            <CoverageBadges slug={font.slug} />
           </div>
           <p className="shrink-0 font-mono text-xs tabular-nums text-fg-subtle">
             {formatDownloads(font.totalDownloads)}
@@ -137,5 +139,19 @@ function SpecimenImage({ slug, name }: { slug: string; name: string }) {
       decoding="async"
       onError={() => setBroken(true)}
     />
+  );
+}
+
+export function CoverageBadges({ slug }: { slug: string }) {
+  const badges = languageBadges(slug);
+  if (!badges.length) return null;
+  return (
+    <p className="mt-1 flex flex-wrap gap-1" aria-label="Language support">
+      {badges.map((b) => (
+        <span key={b} className="rounded-full bg-bg-subtle px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-fg-muted">
+          {b}
+        </span>
+      ))}
+    </p>
   );
 }

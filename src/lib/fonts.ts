@@ -1,5 +1,6 @@
 import raw from "../data/fonts.json" with { type: "json" };
 import listingRaw from "../data/listings.json" with { type: "json" };
+import { supportsAccents } from "./coverage.ts";
 import { DAFONT_AUTHOR, DESIGNER_URL, GITHUB_FONTS_REPO, LICENSE_USD } from "./constants.ts";
 
 export type FontRecord = {
@@ -257,6 +258,8 @@ export type FontQuery = {
   category?: string;
   subcategory?: string;
   sort?: "popular" | "name" | "recent";
+  /** Only faces whose expanded files cover Latin-1 or Central European accents. */
+  accents?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -277,6 +280,7 @@ export function filterFonts(input: FontQuery = {}): FontRecord[] {
   let rows = catalog;
   if (category) rows = rows.filter((f) => f.category === category);
   if (subcategory) rows = rows.filter((f) => f.subcategory === subcategory);
+  if (input.accents) rows = rows.filter((f) => supportsAccents(f.slug));
   if (q) {
     rows = rows.filter(
       (f) =>

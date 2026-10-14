@@ -3,8 +3,10 @@ import { Info, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { HintSpot } from "@/components/guide";
 import { PageShell } from "@/components/layout";
+import { CoverageBadges } from "@/components/font-card";
 import { LicensePanel } from "@/components/license-panel";
 import { FontPlayground } from "@/components/playground";
+import { accentSamples, coverageFor } from "@/lib/coverage";
 import { parseFontSearch } from "@/lib/font-search";
 import { getFont, largeFontNotice, withSources, type FontWithSources } from "@/lib/fonts";
 import { currentTourStep, useGuide } from "@/lib/guide";
@@ -125,6 +127,7 @@ function FontMetaSheet({ font, onClose }: { font: FontWithSources; onClose: () =
       {notice ? <LargeFontNotice message={notice} /> : null}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <AccentSpecimen slug={font.slug} />
           <HintSpot id="sources">
             <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Sources</h2>
             <ul className="mt-3 flex flex-wrap gap-2">
@@ -167,5 +170,45 @@ function FontMetaSheet({ font, onClose }: { font: FontWithSources; onClose: () =
         </div>
       </div>
     </div>
+  );
+}
+function AccentSpecimen({ slug }: { slug: string }) {
+  const lines = accentSamples(slug);
+  const cov = coverageFor(slug);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!lines.length) return;
+    const family = `xf-${slug}`;
+    if ([...document.fonts].some((f) => f.family === family)) {
+      setReady(true);
+      return;
+    }
+    const face = new FontFace(family, `url(/api/font-file/${slug})`);
+    let cancelled = false;
+    face
+      .load()
+      .then((loaded) => {
+        document.fonts.add(loaded);
+        if (!cancelled) setReady(true);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, lines.length]);
+  if (!lines.length) return null;
+  return (
+    <section className="lg:col-span-2">
+      <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Language support</h2>
+      <CoverageBadges slug={slug} />
+      {cov?.glyphs ? <p className="mt-1 text-xs text-fg-muted">{cov.glyphs} glyphs</p> : null}
+      <div className="mt-3 space-y-2" style={{ fontFamily: ready ? `xf-${slug}, var(--font-display)` : undefined }}>
+        {lines.map((line) => (
+          <p key={line} className="text-3xl leading-tight text-fg">
+            {line}
+          </p>
+        ))}
+      </div>
+    </section>
   );
 }
