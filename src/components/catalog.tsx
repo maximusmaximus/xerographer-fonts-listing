@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { categoryTree, filterFonts, STATS, withSources, type FontQuery } from "@/lib/fonts";
 import { compositionHref, compositionOgHref, serializeComposition, type FontSearch } from "@/lib/font-search";
+import { ACCENT_FACE_COUNT, ACCENT_SAMPLES } from "@/lib/coverage";
 import { useExplorer } from "@/lib/store";
 import { formatDownloads, formatDownloadsLong } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
     setSort,
   } = useExplorer();
   const [heroOpen, setHeroOpen] = useState(true);
+  const [accentsOnly, setAccentsOnly] = useState(false);
   const navigate = useNavigate({ from: "/" });
   const seeded = useRef(false);
 
@@ -83,7 +85,16 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
     category: category ?? undefined,
     subcategory: subcategory ?? undefined,
     sort,
+    accents: accentsOnly || undefined,
   };
+
+  function toggleAccents() {
+    const next = !accentsOnly;
+    setAccentsOnly(next);
+    if (next && !previewText.trim()) {
+      setPreviewText([...ACCENT_SAMPLES.latin1, ...ACCENT_SAMPLES.centralEuropean].join(" · "));
+    }
+  }
 
   return (
     <div>
@@ -238,6 +249,13 @@ export function CatalogExplorer({ incoming }: { incoming?: FontSearch }) {
             ))}
           </div>
           </HintSpot>
+          <div className="mt-4">
+            <CategoryChip
+              label={`Supports accents (${ACCENT_FACE_COUNT})`}
+              active={accentsOnly}
+              onClick={toggleAccents}
+            />
+          </div>
           <div className="mt-4 hidden gap-2 lg:flex">
             {(["popular", "name", "recent"] as const).map((key) => (
               <Button key={key} size="sm" variant={sort === key ? "primary" : "secondary"} onClick={() => setSort(key)}>
@@ -311,7 +329,7 @@ function FontGrid({
 
   useEffect(() => {
     setShown(PAGE);
-  }, [filter.q, filter.category, filter.subcategory, filter.sort]);
+  }, [filter.q, filter.category, filter.subcategory, filter.sort, filter.accents]);
 
   const visible = fonts.slice(0, shown);
   return (

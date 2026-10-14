@@ -1,0 +1,709 @@
+{
+ "trainstation": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/basic/sans-serif/trainstation/TrainStation.ttf"
+ },
+ "amplitudes": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 334,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/basic/various/amplitudes/Amplitudes.ttf"
+ },
+ "ponymaker": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/basic/various/ponymaker/PonyMaker.ttf"
+ },
+ "quagent": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 334,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/basic/various/quagent/Quagent-Italic.ttf"
+ },
+ "serifvetika": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/basic/various/serifvetika/Serifvetica.ttf"
+ },
+ "xelita": {
+  "latin1": 75.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 319,
+  "updated": "2026-10-13",
+  "repoFile": "fonts/basic/various/xelita/Xelita.ttf"
+ },
+ "extrasprinkles": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/cartoon/extrasprinkles/ExtraSprinkles.ttf"
+ },
+ "phatrave": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 297,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/cartoon/phatrave/PhatRave.ttf"
+ },
+ "schoolnotes": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 315,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/cartoon/schoolnotes/SchoolNotes.ttf"
+ },
+ "stripefun": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 315,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/cartoon/stripefun/StripeFun.ttf"
+ },
+ "strungout": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/cartoon/strungout/strungout.ttf"
+ },
+ "tastysundae": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/cartoon/tastysundae/TastySundae.ttf"
+ },
+ "threed": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/cartoon/threed/threed filled.ttf"
+ },
+ "comicshadow": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 315,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/comic/comicshadow/ComicShadow.ttf"
+ },
+ "fantasticparty": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/comic/fantasticparty/FantasticParty.ttf"
+ },
+ "funsized": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 318,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/comic/funsized/FunSized.ttf"
+ },
+ "juicyrags": {
+  "latin1": 97.9,
+  "latinExtendedA": 100.0,
+  "glyphs": 335,
+  "updated": "2026-10-13",
+  "repoFile": "fonts/fancy/comic/juicyrags/JuicyRags.ttf"
+ },
+ "swirlinsertion": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 297,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/curly/swirlinsertion/SwirlInsertion.ttf"
+ },
+ "alienfur": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/decorative/alienfur/AlienFur.ttf"
+ },
+ "circlecaps": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/decorative/circlecaps/CircleCaps.ttf"
+ },
+ "datbox": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/decorative/datbox/DatBox.ttf"
+ },
+ "electrical": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/decorative/electrical/electrical.ttf"
+ },
+ "marijuana": {
+  "latin1": 100.0,
+  "latinExtendedA": 98.4,
+  "glyphs": 315,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/decorative/marijuana/Marijuana.ttf"
+ },
+ "hatch": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/destroy/hatch/Hatch.ttf"
+ },
+ "highstyle": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/destroy/highstyle/HighStyle.ttf"
+ },
+ "paintscratch": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/destroy/paintscratch/PaintScratch.ttf"
+ },
+ "banlieuedisco": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/banlieuedisco/BanlieueDisco.ttf"
+ },
+ "basicscratch": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/basicscratch/BasicScratch.ttf"
+ },
+ "black-spiral": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/black-spiral/black spiral.ttf"
+ },
+ "cracked": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 334,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/cracked/Cracked-Narrow.ttf"
+ },
+ "lowerresolution": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/lowerresolution/LowerResolution.ttf"
+ },
+ "metalblocktango": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 303,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/metalblocktango/MetalBlockTango.ttf"
+ },
+ "metalblockultra": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 299,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/metalblockultra/MetalBlockUltra.ttf"
+ },
+ "urbanlabels": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/distorted/urbanlabels/UrbanLabels.ttf"
+ },
+ "blklite": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 335,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/blklite/BlkLite.ttf"
+ },
+ "crackvetica": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/crackvetica/Crackvetica.ttf"
+ },
+ "falconers": {
+  "latin1": 100.0,
+  "latinExtendedA": null,
+  "glyphs": 210,
+  "updated": "2026-10-13",
+  "repoFile": "fonts/fancy/eroded/falconers/Falconers.ttf"
+ },
+ "futuremoon": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/futuremoon/FuturemoonV2.ttf"
+ },
+ "hollavetica": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 324,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/hollavetica/hollavetica.ttf"
+ },
+ "piratesbay": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 318,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/piratesbay/PiratesBay.ttf"
+ },
+ "racingflow": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/racingflow/RaceFlow.ttf"
+ },
+ "racingnumbers": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/racingnumbers/RacingNumbers.ttf"
+ },
+ "realfast": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/realfast/RealFast.ttf"
+ },
+ "summerfestival": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 329,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/eroded/summerfestival/SummerFestival.ttf"
+ },
+ "hotsweat": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 330,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/fire-ice/hotsweat/HotSweat.ttf"
+ },
+ "summerfire": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/fire-ice/summerfire/SummerFire.ttf"
+ },
+ "winterice": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 297,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/fire-ice/winterice/WinterIce.ttf"
+ },
+ "beastmode-suite": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 334,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/groovy/beastmode-suite/BeastMode-Bold.ttf"
+ },
+ "disconight": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 315,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/groovy/disconight/DiscoNight.ttf"
+ },
+ "neondisco": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/groovy/neondisco/NeonDisco.ttf"
+ },
+ "nuevodisco": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 326,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/groovy/nuevodisco/NuevoDisco.ttf"
+ },
+ "wickedseventies": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/groovy/wickedseventies/WickedSeventies.ttf"
+ },
+ "blackwidow": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/horror/blackwidow/BlackWidow.ttf"
+ },
+ "metalshow": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/horror/metalshow/MetalShow.ttf"
+ },
+ "zerocollege": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 300,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/old-school/zerocollege/ZeroCollege.ttf"
+ },
+ "broadwayevent": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 365,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/retro/broadwayevent/BroadwayEvent.ttf"
+ },
+ "visualmagnets": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/stencil-army/visualmagnets/VisualMagnets.ttf"
+ },
+ "indierock": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/typewriter/indierock/IndieRock.ttf"
+ },
+ "rockster": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 297,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/various/rockster/rockster.ttf"
+ },
+ "westernracing": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/fancy/western/westernracing/WesternRacing.ttf"
+ },
+ "tacofiesta": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 328,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/foreign-look/mexican/tacofiesta/TacoFiesta.ttf"
+ },
+ "metalshred": {
+  "latin1": 100.0,
+  "latinExtendedA": null,
+  "glyphs": 173,
+  "updated": "2026-10-13",
+  "repoFile": "fonts/gothic/various/metalshred/MetalShred.ttf"
+ },
+ "snowflakes": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/holiday/christmas/snowflakes/SnowFlakes.ttf"
+ },
+ "basicsharpie": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/brush/basicsharpie/BasicSharpie.ttf"
+ },
+ "traphouse": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/brush/traphouse/traphouse.ttf"
+ },
+ "zombie-checklist": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 331,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/brush/zombie-checklist/ZombieChecklistV4.ttf"
+ },
+ "zombietreats": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/brush/zombietreats/ZombieTreats.ttf"
+ },
+ "nuevoyork": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 336,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/calligraphy/nuevoyork/NuevoYork.ttf"
+ },
+ "youngranger": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/calligraphy/youngranger/YoungRanger.ttf"
+ },
+ "freshtrack": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/graffiti/freshtrack/FreshTrack.ttf"
+ },
+ "californiaharvest": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/handwritten/californiaharvest/CaliforniaHarvest.ttf"
+ },
+ "eventshark": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/handwritten/eventshark/EventShark.ttf"
+ },
+ "angrynerds": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 315,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/trash/angrynerds/AngryNerds.ttf"
+ },
+ "brushgrunge": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/trash/brushgrunge/BrushGrunge.ttf"
+ },
+ "spackler": {
+  "latin1": 100.0,
+  "latinExtendedA": null,
+  "glyphs": 211,
+  "updated": "2026-10-13",
+  "repoFile": "fonts/script/trash/spackler/Spackler.ttf"
+ },
+ "chronicdelivery": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 299,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/various/chronicdelivery/ChronicDelivery.ttf"
+ },
+ "drunk-tattoo": {
+  "latin1": 92.7,
+  "latinExtendedA": 100.0,
+  "glyphs": 296,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/script/various/drunk-tattoo/drunk tattoo.ttf"
+ },
+ "circlepixels": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 318,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/lcd/circlepixels/CirclePixels.ttf"
+ },
+ "higherpixels": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 318,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/lcd/higherpixels/HigherPixels.ttf"
+ },
+ "megabits": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/lcd/megabits/MegaBits.ttf"
+ },
+ "asterisk": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 335,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/sci-fi/asterisk/Asterisk-Bold.ttf"
+ },
+ "astronmica": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 337,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/sci-fi/astronmica/Astronmica.ttf"
+ },
+ "epicenter": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 334,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/sci-fi/epicenter/Epicenter-Black.ttf"
+ },
+ "miswak": {
+  "latin1": 75.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 319,
+  "updated": "2026-10-13",
+  "repoFile": "fonts/techno/sci-fi/miswak/Miswak.ttf"
+ },
+ "roboticrevolution": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 330,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/sci-fi/roboticrevolution/RoboticRevolution.ttf"
+ },
+ "simulacre": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 331,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/sci-fi/simulacre/Simulacre.ttf"
+ },
+ "anotherline": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/square/anotherline/AnotherLine.ttf"
+ },
+ "bentout": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 314,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/bentout/BentOut.ttf"
+ },
+ "biometric": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 334,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/biometric/BioMetric-Chubby.ttf"
+ },
+ "couperblaque": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 337,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/couperblaque/CouperBlaque.ttf"
+ },
+ "designerpixels": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 318,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/designerpixels/DesignerPixels.ttf"
+ },
+ "electrohouse": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/electrohouse/electrohouse.ttf"
+ },
+ "fonderian": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 332,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/fonderian/Fonderian-Black.ttf"
+ },
+ "martienso": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 331,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/martienso/Martienso-Bold.ttf"
+ },
+ "modernism": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 334,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/modernism/Modernism-Bold.ttf"
+ },
+ "robotshadow": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 287,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/robotshadow/RobotShadow.ttf"
+ },
+ "robustlybrewing": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 331,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/robustlybrewing/RobustlyBrewing.ttf"
+ },
+ "solarium": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 316,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/solarium/Solarium.ttf"
+ },
+ "squanch": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 331,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/squanch/Squanch.ttf"
+ },
+ "tracksion": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 317,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/tracksion/Tracksion.ttf"
+ },
+ "wonderage": {
+  "latin1": 100.0,
+  "latinExtendedA": 100.0,
+  "glyphs": 331,
+  "updated": "2026-10-14",
+  "repoFile": "fonts/techno/various/wonderage/WonderAge.ttf"
+ }
+}
