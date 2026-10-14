@@ -1,28 +1,49 @@
 import JSZip from "jszip";
 import { getFont } from "./fonts";
+import repoFilesRaw from "../data/repo-files.json" with { type: "json" };
 import { coverageFor } from "./coverage";
+
 import { dafontGet } from "./outbound";
+
+const repoFiles = repoFilesRaw as Record<string, string>;
 
 const REPO_RAW = "https://raw.githubusercontent.com/maximusmaximus/xerographer-fonts/main";
 
-/** Expanded faces (accents added in the repo) load from GitHub until DaFont carries the update. */
-async function loadRepoFile(slug: string): Promise<{ bytes: Uint8Array; contentType: string; filename: string } | null> {
-  const cov = coverageFor(slug);
-  if (!cov) return null;
+type Loaded = { bytes: Uint8Array; contentType: string; filename: string };
+
+const cache = new Map<string, Loaded>();
+
+/**
+ * Font files live in the public repo next to each other: <Name>.woff2 beside <Name>.ttf.
+ * Load the WOFF2 first (much smaller), then the TTF, and only then fall back to DaFont.
+ * Expanded faces (accents added in the repo) also only render correctly from the repo
+ * until DaFont carries the update.
+ */
+async function fetchRepo(path: string): Promise<Uint8Array | null> {
   try {
-    const url = `${REPO_RAW}/${cov.repoFile.split("/").map(encodeURIComponent).join("/")}`;
-    const res = await fetch(url);
+    const res = await fetch(`${REPO_RAW}/${path.split("/").map(encodeURIComponent).join("/")}`);
     if (!res.ok) return null;
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    if (!(isTtf(bytes) || isOtf(bytes))) return null;
-    const filename = cov.repoFile.split("/").pop() ?? `${slug}.ttf`;
-    return { bytes, contentType: contentTypeFor(filename), filename };
+    return new Uint8Array(await res.arrayBuffer());
   } catch {
     return null;
   }
 }
 
-const cache = new Map<string, { bytes: Uint8Array; contentType: string; filename: string }>();
+async function loadRepoFile(slug: string): Promise<Loaded | null> {
+  const ttfPath = repoFiles[slug] ?? coverageFor(slug)?.repoFile;
+  if (!ttfPath) return null;
+  const woff2Path = ttfPath.replace(/\.(ttf|otf)$/i, ".woff2");
+  const woff2 = await fetchRepo(woff2Path);
+  if (woff2 && isWoff2(woff2)) {
+    return { bytes: woff2, contentType: "font/woff2", filename: woff2Path.split("/").pop() ?? `${slug}.woff2` };
+  }
+  const ttf = await fetchRepo(ttfPath);
+  if (ttf && (isTtf(ttf) || isOtf(ttf))) {
+    const filename = ttfPath.split("/").pop() ?? `${slug}.ttf`;
+    return { bytes: ttf, contentType: contentTypeFor(filename), filename };
+  }
+  return null;
+}
 
 export async function loadFontFile(slug: string): Promise<{ bytes: Uint8Array; contentType: string; filename: string } | null> {
   if (!getFont(slug)) return null;
@@ -80,6 +101,9 @@ async function extractFontBytes(
   return null;
 }
 
+function isWoff2(buf: Uint8Array): boolean {
+  return buf[0] === 0x77 && buf[1] === 0x4f && buf[2] === 0x46 && buf[3] === 0x32;
+}
 function isZip(buf: Uint8Array): boolean {
   return buf[0] === 0x50 && buf[1] === 0x4b;
 }
