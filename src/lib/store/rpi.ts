@@ -14,8 +14,11 @@ export const BOOK = {
   pageCount: 530,
   retailPrice: "199.00",
   itemDescription: "Xerographer Specimen Ledger (530pp)",
-  coverUrl: "https://gateway.pinata.cloud/ipfs/bafybeidg7f76uuxrj3pvuvlctwoifbgnjkbonjhh3seg3zzum5dbborwoa",
-  gutsUrl: "https://gateway.pinata.cloud/ipfs/bafybeieqqzbnb5zkfzckqtk6palyaogkklxnbdjj3qzj6mdryqbye2e33a",
+  // Approved 300 ppi flat print files (Oct 14, 2026; RPI order 003 passed preflight with these).
+  // Cover:    13,504,418 bytes, md5 0ebb5f8f345b537c44ae3ea4b0872f67
+  // Interior: 1,329,989,718 bytes, md5 ef6e138de446f67eb9e489823bb9453f, 530 pages, 0 vector nodes
+  coverUrl: "https://gateway.pinata.cloud/ipfs/bafybeia6w4ddas57s24alpcswku74o6au6fisfs4a3qrv57kfwz2bpz2xe",
+  gutsUrl: "https://gateway.pinata.cloud/ipfs/bafybeidux326xwjllzedkvqaivxryx3segqtbgyhuv2qdr3d7hdedoew2q",
 } as const;
 
 export function httpRpiClient(opts: { baseUrl: string; auth: string | undefined; fetchImpl?: typeof fetch; log?: (m: string) => void }): RpiClient {
