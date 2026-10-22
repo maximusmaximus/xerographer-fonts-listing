@@ -3,8 +3,13 @@ import { useState } from "react";
 import { useStoreStatus } from "@/lib/store-status";
 import { PageShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { BOOK_PRODUCT_DEFAULTS, type BookProduct } from "@/lib/product";
 
 export const Route = createFileRoute("/book")({
+  loader: async () => {
+    const { getBookProduct } = await import("@/lib/product.server");
+    return getBookProduct();
+  },
   head: () => ({ meta: [{ title: "Xerographer Specimen Ledger — Xerographer Fonts" }] }),
   component: BookPage,
 });
@@ -16,11 +21,12 @@ const SHIPPING = [
 ];
 
 function BookPage() {
+  const product = (Route.useLoaderData() ?? BOOK_PRODUCT_DEFAULTS) as BookProduct;
   const status = useStoreStatus(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [soldOutNow, setSoldOutNow] = useState(false);
-  const open = status ? status.enabled && status.open : null;
+  const open = !product.listed ? false : status ? status.enabled && status.open : null;
   const [editionGone, setEditionGone] = useState(false);
   const editionSoldOut = editionGone || status?.editionSoldOut === true;
   const soldOut = editionSoldOut || soldOutNow || (status?.enabled === true && status.copiesLeft === 0);
@@ -56,16 +62,12 @@ function BookPage() {
     <PageShell>
       <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
         <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">The book</p>
-        <h1 className="mt-3 font-display text-4xl sm:text-5xl">Xerographer Specimen Ledger</h1>
-        <p className="mt-4 text-fg-muted">530-page hardcover · 11.75 × 11.75 in · full color on 100# gloss · ImageWrap cover</p>
-        <p className="mt-6 text-lg">
-          Every Xerographer face, set and printed: the full catalog of 1,376 original typefaces drawn since 2012 —
-          eroded, cartoon, script, horror, stencil and the rest of the photocopy cabinet — gathered into one
-          oversized specimen ledger.
-        </p>
+        <h1 className="mt-3 font-display text-4xl sm:text-5xl">{product.title}</h1>
+        <p className="mt-4 text-fg-muted">{product.specs}</p>
+        <p className="mt-6 text-lg">{product.description}</p>
         <div className="mt-8 flex flex-wrap items-baseline gap-3">
-          <span className="font-display text-4xl">$250</span>
-          <span className="text-fg-muted">plus shipping at cost and sales tax</span>
+          <span className="font-display text-4xl">{product.priceLabel}</span>
+          <span className="text-fg-muted">{product.priceNote}</span>
         </div>
         <table className="mt-6 w-full text-sm">
           <tbody>
@@ -99,7 +101,7 @@ function BookPage() {
                 </p>
               )}
               <Button size="lg" onClick={buy} disabled={busy || open === null || soldOut}>
-                {editionSoldOut ? "Sold out" : soldOut ? "Sold out for today" : busy ? "Opening checkout…" : "Buy — $250"}
+                {editionSoldOut ? "Sold out" : soldOut ? "Sold out for today" : busy ? "Opening checkout…" : `Buy — ${product.priceLabel}`}
               </Button>
             </>
           )}

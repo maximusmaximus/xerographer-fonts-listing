@@ -147,6 +147,9 @@ export function SiteFooter() {
           <a className="hover:text-fg" href="mailto:maxinfeld@gmail.com">
             Licensing
           </a>
+          <Link to="/admin" className="hover:text-fg">
+            Admin
+          </Link>
         </div>
       </div>
     </footer>
