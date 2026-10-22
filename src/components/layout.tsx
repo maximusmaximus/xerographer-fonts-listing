@@ -1,3 +1,4 @@
+import { BookPromo } from "@/components/book-promo";
 import { Link } from "@tanstack/react-router";
 import { Github, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { GITHUB_FONTS_REPO } from "@/lib/constants";
 import { pickHeaderFont } from "@/lib/fonts";
 import { useTheme } from "@/lib/theme";
-import { useStoreStatus } from "@/lib/store-status";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -74,16 +74,14 @@ export function ThemeToggle() {
 }
 
 function BookTab() {
-  // Shown only when the server says the store is enabled (STORE_ENV set and valid).
-  const status = useStoreStatus();
-  if (!status?.enabled) return null;
   return (
     <Link
       to="/book"
-      className="inline-flex h-11 items-center px-1.5 text-xs text-fg-muted transition-colors hover:text-fg sm:px-3 sm:text-sm"
+      data-book-tab
+      className="inline-flex h-11 items-center whitespace-nowrap rounded px-1.5 text-xs text-fg-muted transition-colors hover:text-fg sm:px-3 sm:text-sm"
       activeProps={{ className: "text-fg" }}
     >
-      Buy Our Specimen Book
+      Specimen Book
     </Link>
   );
 }
@@ -117,6 +115,7 @@ export function SiteHeader() {
           <ThemeToggle />
         </nav>
       </div>
+      <BookPromo />
     </header>
   );
 }
