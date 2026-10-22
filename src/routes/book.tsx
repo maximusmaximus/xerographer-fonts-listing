@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useStoreStatus } from "@/lib/store-status";
 import { PageShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { BookPreview } from "@/components/book-preview";
 import { BOOK_PRODUCT_DEFAULTS, type BookProduct } from "@/lib/product";
 import { loadBookProduct } from "@/lib/book-product";
 
@@ -58,7 +59,9 @@ function BookPage() {
 
   return (
     <PageShell>
-      <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <article className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+        <BookPreview />
+        <div>
         <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">The book</p>
         <h1 className="mt-3 font-display text-4xl sm:text-5xl">{product.title}</h1>
         <p className="mt-4 text-fg-muted">{product.specs}</p>
@@ -104,6 +107,7 @@ function BookPage() {
             </>
           )}
           {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+        </div>
         </div>
       </article>
     </PageShell>
