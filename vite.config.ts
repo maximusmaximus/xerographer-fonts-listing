@@ -181,6 +181,13 @@ export default defineConfig(({ command, isPreview }) => ({
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
+            // Store routes (webhooks, cron, checkout, uploads) get 30 s; everything else keeps
+            // Vercel's default. Per-route config via the preset's functionRules.
+            vercel: {
+              functionRules: {
+                "/api/store/**": { maxDuration: 30 },
+              },
+            },
           }),
         ]
       : []),

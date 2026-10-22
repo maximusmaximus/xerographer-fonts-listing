@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GITHUB_FONTS_REPO } from "@/lib/constants";
 import { pickHeaderFont } from "@/lib/fonts";
 import { useTheme } from "@/lib/theme";
+import { useStoreStatus } from "@/lib/store-status";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -72,6 +73,21 @@ export function ThemeToggle() {
   );
 }
 
+function BookTab() {
+  // Shown only when the server says the store is enabled (STORE_ENV set and valid).
+  const status = useStoreStatus();
+  if (!status?.enabled) return null;
+  return (
+    <Link
+      to="/book"
+      className="inline-flex h-11 items-center px-1.5 text-xs text-fg-muted transition-colors hover:text-fg sm:px-3 sm:text-sm"
+      activeProps={{ className: "text-fg" }}
+    >
+      Buy Our Specimen Book
+    </Link>
+  );
+}
+
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur-md">
@@ -88,6 +104,7 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <BookTab />
           <a
             href={GITHUB_FONTS_REPO}
             className="inline-flex h-11 items-center gap-1.5 px-1.5 text-xs text-fg-muted transition-colors hover:text-fg sm:px-3 sm:text-sm"

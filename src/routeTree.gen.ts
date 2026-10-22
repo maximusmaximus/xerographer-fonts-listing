@@ -12,17 +12,35 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as BookRouteImport } from './routes/book'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as DotwellKnownMcpDotjsonRouteImport } from './routes/[.]well-known/mcp[.]json'
+import { Route as AdminStoreRouteImport } from './routes/admin.store'
 import { Route as ApiFontsRouteImport } from './routes/api/fonts'
 import { Route as ApiLicensesRouteImport } from './routes/api/licenses'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiOgCompositionRouteImport } from './routes/api/og-composition'
+import { Route as BookThanksRouteImport } from './routes/book_.thanks'
 import { Route as FontSlugRouteImport } from './routes/font.$slug'
 import { Route as LicenseIdRouteImport } from './routes/license.$id'
+import { Route as OrderTokenRouteImport } from './routes/order.$token'
 import { Route as ApiFontFileSlugRouteImport } from './routes/api/font-file.$slug'
 import { Route as ApiLicensesIdRouteImport } from './routes/api/licenses.$id'
 import { Route as ApiPreviewImageSlugRouteImport } from './routes/api/preview-image.$slug'
+import { Route as ApiStoreAdminRouteImport } from './routes/api/store/admin'
+import { Route as ApiStoreCheckoutRouteImport } from './routes/api/store/checkout'
+import { Route as ApiStoreStatusRouteImport } from './routes/api/store/status'
 import { Route as ApiLicensesIdPdfRouteImport } from './routes/api/licenses.$id.pdf'
+import { Route as ApiStoreAdminHealthRouteImport } from './routes/api/store/admin/health'
+import { Route as ApiStoreCronJobRouteImport } from './routes/api/store/cron/$job'
+import { Route as ApiStoreOrderTokenRouteImport } from './routes/api/store/order/$token'
+import { Route as ApiStoreRpiWebhookRouteImport } from './routes/api/store/rpi/webhook'
+import { Route as ApiStoreStripeWebhookRouteImport } from './routes/api/store/stripe/webhook'
+import { Route as ApiStoreAdminPhotosPhotoIdRouteImport } from './routes/api/store/admin/photos/$photoId'
+import { Route as ApiStoreOrderTokenCancelRouteImport } from './routes/api/store/order/$token/cancel'
+import { Route as ApiStoreOrderTokenReprintRouteImport } from './routes/api/store/order/$token/reprint'
+import { Route as ApiStoreOrderTokenPhotosPhotoIdRouteImport } from './routes/api/store/order/$token/photos/$photoId'
+import { Route as ApiStoreOrderTokenReprintRequestIdPhotosRouteImport } from './routes/api/store/order/$token/reprint/$requestId/photos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,9 +57,24 @@ const AgentsRoute = AgentsRouteImport.update({
   path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookRoute = BookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotwellKnownMcpDotjsonRoute = DotwellKnownMcpDotjsonRouteImport.update({
   id: '/.well-known/mcp.json',
   path: '/.well-known/mcp.json',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminStoreRoute = AdminStoreRouteImport.update({
+  id: '/admin/store',
+  path: '/admin/store',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFontsRoute = ApiFontsRouteImport.update({
@@ -64,6 +97,11 @@ const ApiOgCompositionRoute = ApiOgCompositionRouteImport.update({
   path: '/api/og-composition',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookThanksRoute = BookThanksRouteImport.update({
+  id: '/book_/thanks',
+  path: '/book/thanks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FontSlugRoute = FontSlugRouteImport.update({
   id: '/font/$slug',
   path: '/font/$slug',
@@ -72,6 +110,11 @@ const FontSlugRoute = FontSlugRouteImport.update({
 const LicenseIdRoute = LicenseIdRouteImport.update({
   id: '/license/$id',
   path: '/license/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderTokenRoute = OrderTokenRouteImport.update({
+  id: '/order/$token',
+  path: '/order/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFontFileSlugRoute = ApiFontFileSlugRouteImport.update({
@@ -89,60 +132,184 @@ const ApiPreviewImageSlugRoute = ApiPreviewImageSlugRouteImport.update({
   path: '/api/preview-image/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStoreAdminRoute = ApiStoreAdminRouteImport.update({
+  id: '/api/store/admin',
+  path: '/api/store/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStoreCheckoutRoute = ApiStoreCheckoutRouteImport.update({
+  id: '/api/store/checkout',
+  path: '/api/store/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStoreStatusRoute = ApiStoreStatusRouteImport.update({
+  id: '/api/store/status',
+  path: '/api/store/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLicensesIdPdfRoute = ApiLicensesIdPdfRouteImport.update({
   id: '/pdf',
   path: '/pdf',
   getParentRoute: () => ApiLicensesIdRoute,
 } as any)
+const ApiStoreAdminHealthRoute = ApiStoreAdminHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => ApiStoreAdminRoute,
+} as any)
+const ApiStoreCronJobRoute = ApiStoreCronJobRouteImport.update({
+  id: '/api/store/cron/$job',
+  path: '/api/store/cron/$job',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStoreOrderTokenRoute = ApiStoreOrderTokenRouteImport.update({
+  id: '/api/store/order/$token',
+  path: '/api/store/order/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStoreRpiWebhookRoute = ApiStoreRpiWebhookRouteImport.update({
+  id: '/api/store/rpi/webhook',
+  path: '/api/store/rpi/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStoreStripeWebhookRoute = ApiStoreStripeWebhookRouteImport.update({
+  id: '/api/store/stripe/webhook',
+  path: '/api/store/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStoreAdminPhotosPhotoIdRoute =
+  ApiStoreAdminPhotosPhotoIdRouteImport.update({
+    id: '/photos/$photoId',
+    path: '/photos/$photoId',
+    getParentRoute: () => ApiStoreAdminRoute,
+  } as any)
+const ApiStoreOrderTokenCancelRoute =
+  ApiStoreOrderTokenCancelRouteImport.update({
+    id: '/cancel',
+    path: '/cancel',
+    getParentRoute: () => ApiStoreOrderTokenRoute,
+  } as any)
+const ApiStoreOrderTokenReprintRoute =
+  ApiStoreOrderTokenReprintRouteImport.update({
+    id: '/reprint',
+    path: '/reprint',
+    getParentRoute: () => ApiStoreOrderTokenRoute,
+  } as any)
+const ApiStoreOrderTokenPhotosPhotoIdRoute =
+  ApiStoreOrderTokenPhotosPhotoIdRouteImport.update({
+    id: '/photos/$photoId',
+    path: '/photos/$photoId',
+    getParentRoute: () => ApiStoreOrderTokenRoute,
+  } as any)
+const ApiStoreOrderTokenReprintRequestIdPhotosRoute =
+  ApiStoreOrderTokenReprintRequestIdPhotosRouteImport.update({
+    id: '/$requestId/photos',
+    path: '/$requestId/photos',
+    getParentRoute: () => ApiStoreOrderTokenReprintRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/agents': typeof AgentsRoute
+  '/book': typeof BookRoute
+  '/terms': typeof TermsRoute
   '/.well-known/mcp.json': typeof DotwellKnownMcpDotjsonRoute
+  '/admin/store': typeof AdminStoreRoute
   '/api/fonts': typeof ApiFontsRoute
   '/api/licenses': typeof ApiLicensesRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
   '/api/og-composition': typeof ApiOgCompositionRoute
+  '/book/thanks': typeof BookThanksRoute
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
+  '/order/$token': typeof OrderTokenRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
   '/api/licenses/$id': typeof ApiLicensesIdRouteWithChildren
   '/api/preview-image/$slug': typeof ApiPreviewImageSlugRoute
+  '/api/store/admin': typeof ApiStoreAdminRouteWithChildren
+  '/api/store/checkout': typeof ApiStoreCheckoutRoute
+  '/api/store/status': typeof ApiStoreStatusRoute
   '/api/licenses/$id/pdf': typeof ApiLicensesIdPdfRoute
+  '/api/store/admin/health': typeof ApiStoreAdminHealthRoute
+  '/api/store/cron/$job': typeof ApiStoreCronJobRoute
+  '/api/store/order/$token': typeof ApiStoreOrderTokenRouteWithChildren
+  '/api/store/rpi/webhook': typeof ApiStoreRpiWebhookRoute
+  '/api/store/stripe/webhook': typeof ApiStoreStripeWebhookRoute
+  '/api/store/admin/photos/$photoId': typeof ApiStoreAdminPhotosPhotoIdRoute
+  '/api/store/order/$token/cancel': typeof ApiStoreOrderTokenCancelRoute
+  '/api/store/order/$token/reprint': typeof ApiStoreOrderTokenReprintRouteWithChildren
+  '/api/store/order/$token/photos/$photoId': typeof ApiStoreOrderTokenPhotosPhotoIdRoute
+  '/api/store/order/$token/reprint/$requestId/photos': typeof ApiStoreOrderTokenReprintRequestIdPhotosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/agents': typeof AgentsRoute
+  '/book': typeof BookRoute
+  '/terms': typeof TermsRoute
   '/.well-known/mcp.json': typeof DotwellKnownMcpDotjsonRoute
+  '/admin/store': typeof AdminStoreRoute
   '/api/fonts': typeof ApiFontsRoute
   '/api/licenses': typeof ApiLicensesRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
   '/api/og-composition': typeof ApiOgCompositionRoute
+  '/book/thanks': typeof BookThanksRoute
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
+  '/order/$token': typeof OrderTokenRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
   '/api/licenses/$id': typeof ApiLicensesIdRouteWithChildren
   '/api/preview-image/$slug': typeof ApiPreviewImageSlugRoute
+  '/api/store/admin': typeof ApiStoreAdminRouteWithChildren
+  '/api/store/checkout': typeof ApiStoreCheckoutRoute
+  '/api/store/status': typeof ApiStoreStatusRoute
   '/api/licenses/$id/pdf': typeof ApiLicensesIdPdfRoute
+  '/api/store/admin/health': typeof ApiStoreAdminHealthRoute
+  '/api/store/cron/$job': typeof ApiStoreCronJobRoute
+  '/api/store/order/$token': typeof ApiStoreOrderTokenRouteWithChildren
+  '/api/store/rpi/webhook': typeof ApiStoreRpiWebhookRoute
+  '/api/store/stripe/webhook': typeof ApiStoreStripeWebhookRoute
+  '/api/store/admin/photos/$photoId': typeof ApiStoreAdminPhotosPhotoIdRoute
+  '/api/store/order/$token/cancel': typeof ApiStoreOrderTokenCancelRoute
+  '/api/store/order/$token/reprint': typeof ApiStoreOrderTokenReprintRouteWithChildren
+  '/api/store/order/$token/photos/$photoId': typeof ApiStoreOrderTokenPhotosPhotoIdRoute
+  '/api/store/order/$token/reprint/$requestId/photos': typeof ApiStoreOrderTokenReprintRequestIdPhotosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/agents': typeof AgentsRoute
+  '/book': typeof BookRoute
+  '/terms': typeof TermsRoute
   '/.well-known/mcp.json': typeof DotwellKnownMcpDotjsonRoute
+  '/admin/store': typeof AdminStoreRoute
   '/api/fonts': typeof ApiFontsRoute
   '/api/licenses': typeof ApiLicensesRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
   '/api/og-composition': typeof ApiOgCompositionRoute
+  '/book_/thanks': typeof BookThanksRoute
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
+  '/order/$token': typeof OrderTokenRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
   '/api/licenses/$id': typeof ApiLicensesIdRouteWithChildren
   '/api/preview-image/$slug': typeof ApiPreviewImageSlugRoute
+  '/api/store/admin': typeof ApiStoreAdminRouteWithChildren
+  '/api/store/checkout': typeof ApiStoreCheckoutRoute
+  '/api/store/status': typeof ApiStoreStatusRoute
   '/api/licenses/$id/pdf': typeof ApiLicensesIdPdfRoute
+  '/api/store/admin/health': typeof ApiStoreAdminHealthRoute
+  '/api/store/cron/$job': typeof ApiStoreCronJobRoute
+  '/api/store/order/$token': typeof ApiStoreOrderTokenRouteWithChildren
+  '/api/store/rpi/webhook': typeof ApiStoreRpiWebhookRoute
+  '/api/store/stripe/webhook': typeof ApiStoreStripeWebhookRoute
+  '/api/store/admin/photos/$photoId': typeof ApiStoreAdminPhotosPhotoIdRoute
+  '/api/store/order/$token/cancel': typeof ApiStoreOrderTokenCancelRoute
+  '/api/store/order/$token/reprint': typeof ApiStoreOrderTokenReprintRouteWithChildren
+  '/api/store/order/$token/photos/$photoId': typeof ApiStoreOrderTokenPhotosPhotoIdRoute
+  '/api/store/order/$token/reprint/$requestId/photos': typeof ApiStoreOrderTokenReprintRequestIdPhotosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -150,64 +317,130 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/agents'
+    | '/book'
+    | '/terms'
     | '/.well-known/mcp.json'
+    | '/admin/store'
     | '/api/fonts'
     | '/api/licenses'
     | '/api/mcp'
     | '/api/og-composition'
+    | '/book/thanks'
     | '/font/$slug'
     | '/license/$id'
+    | '/order/$token'
     | '/api/font-file/$slug'
     | '/api/licenses/$id'
     | '/api/preview-image/$slug'
+    | '/api/store/admin'
+    | '/api/store/checkout'
+    | '/api/store/status'
     | '/api/licenses/$id/pdf'
+    | '/api/store/admin/health'
+    | '/api/store/cron/$job'
+    | '/api/store/order/$token'
+    | '/api/store/rpi/webhook'
+    | '/api/store/stripe/webhook'
+    | '/api/store/admin/photos/$photoId'
+    | '/api/store/order/$token/cancel'
+    | '/api/store/order/$token/reprint'
+    | '/api/store/order/$token/photos/$photoId'
+    | '/api/store/order/$token/reprint/$requestId/photos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/agents'
+    | '/book'
+    | '/terms'
     | '/.well-known/mcp.json'
+    | '/admin/store'
     | '/api/fonts'
     | '/api/licenses'
     | '/api/mcp'
     | '/api/og-composition'
+    | '/book/thanks'
     | '/font/$slug'
     | '/license/$id'
+    | '/order/$token'
     | '/api/font-file/$slug'
     | '/api/licenses/$id'
     | '/api/preview-image/$slug'
+    | '/api/store/admin'
+    | '/api/store/checkout'
+    | '/api/store/status'
     | '/api/licenses/$id/pdf'
+    | '/api/store/admin/health'
+    | '/api/store/cron/$job'
+    | '/api/store/order/$token'
+    | '/api/store/rpi/webhook'
+    | '/api/store/stripe/webhook'
+    | '/api/store/admin/photos/$photoId'
+    | '/api/store/order/$token/cancel'
+    | '/api/store/order/$token/reprint'
+    | '/api/store/order/$token/photos/$photoId'
+    | '/api/store/order/$token/reprint/$requestId/photos'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/agents'
+    | '/book'
+    | '/terms'
     | '/.well-known/mcp.json'
+    | '/admin/store'
     | '/api/fonts'
     | '/api/licenses'
     | '/api/mcp'
     | '/api/og-composition'
+    | '/book_/thanks'
     | '/font/$slug'
     | '/license/$id'
+    | '/order/$token'
     | '/api/font-file/$slug'
     | '/api/licenses/$id'
     | '/api/preview-image/$slug'
+    | '/api/store/admin'
+    | '/api/store/checkout'
+    | '/api/store/status'
     | '/api/licenses/$id/pdf'
+    | '/api/store/admin/health'
+    | '/api/store/cron/$job'
+    | '/api/store/order/$token'
+    | '/api/store/rpi/webhook'
+    | '/api/store/stripe/webhook'
+    | '/api/store/admin/photos/$photoId'
+    | '/api/store/order/$token/cancel'
+    | '/api/store/order/$token/reprint'
+    | '/api/store/order/$token/photos/$photoId'
+    | '/api/store/order/$token/reprint/$requestId/photos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AgentsRoute: typeof AgentsRoute
+  BookRoute: typeof BookRoute
+  TermsRoute: typeof TermsRoute
   DotwellKnownMcpDotjsonRoute: typeof DotwellKnownMcpDotjsonRoute
+  AdminStoreRoute: typeof AdminStoreRoute
   ApiFontsRoute: typeof ApiFontsRoute
   ApiLicensesRoute: typeof ApiLicensesRouteWithChildren
   ApiMcpRoute: typeof ApiMcpRoute
   ApiOgCompositionRoute: typeof ApiOgCompositionRoute
+  BookThanksRoute: typeof BookThanksRoute
   FontSlugRoute: typeof FontSlugRoute
   LicenseIdRoute: typeof LicenseIdRoute
+  OrderTokenRoute: typeof OrderTokenRoute
   ApiFontFileSlugRoute: typeof ApiFontFileSlugRoute
   ApiPreviewImageSlugRoute: typeof ApiPreviewImageSlugRoute
+  ApiStoreAdminRoute: typeof ApiStoreAdminRouteWithChildren
+  ApiStoreCheckoutRoute: typeof ApiStoreCheckoutRoute
+  ApiStoreStatusRoute: typeof ApiStoreStatusRoute
+  ApiStoreCronJobRoute: typeof ApiStoreCronJobRoute
+  ApiStoreOrderTokenRoute: typeof ApiStoreOrderTokenRouteWithChildren
+  ApiStoreRpiWebhookRoute: typeof ApiStoreRpiWebhookRoute
+  ApiStoreStripeWebhookRoute: typeof ApiStoreStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -233,11 +466,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book': {
+      id: '/book'
+      path: '/book'
+      fullPath: '/book'
+      preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.well-known/mcp.json': {
       id: '/.well-known/mcp.json'
       path: '/.well-known/mcp.json'
       fullPath: '/.well-known/mcp.json'
       preLoaderRoute: typeof DotwellKnownMcpDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/store': {
+      id: '/admin/store'
+      path: '/admin/store'
+      fullPath: '/admin/store'
+      preLoaderRoute: typeof AdminStoreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/fonts': {
@@ -268,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOgCompositionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book_/thanks': {
+      id: '/book_/thanks'
+      path: '/book/thanks'
+      fullPath: '/book/thanks'
+      preLoaderRoute: typeof BookThanksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/font/$slug': {
       id: '/font/$slug'
       path: '/font/$slug'
@@ -280,6 +541,13 @@ declare module '@tanstack/react-router' {
       path: '/license/$id'
       fullPath: '/license/$id'
       preLoaderRoute: typeof LicenseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order/$token': {
+      id: '/order/$token'
+      path: '/order/$token'
+      fullPath: '/order/$token'
+      preLoaderRoute: typeof OrderTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/font-file/$slug': {
@@ -303,12 +571,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPreviewImageSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/store/admin': {
+      id: '/api/store/admin'
+      path: '/api/store/admin'
+      fullPath: '/api/store/admin'
+      preLoaderRoute: typeof ApiStoreAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/store/checkout': {
+      id: '/api/store/checkout'
+      path: '/api/store/checkout'
+      fullPath: '/api/store/checkout'
+      preLoaderRoute: typeof ApiStoreCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/store/status': {
+      id: '/api/store/status'
+      path: '/api/store/status'
+      fullPath: '/api/store/status'
+      preLoaderRoute: typeof ApiStoreStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/licenses/$id/pdf': {
       id: '/api/licenses/$id/pdf'
       path: '/pdf'
       fullPath: '/api/licenses/$id/pdf'
       preLoaderRoute: typeof ApiLicensesIdPdfRouteImport
       parentRoute: typeof ApiLicensesIdRoute
+    }
+    '/api/store/admin/health': {
+      id: '/api/store/admin/health'
+      path: '/health'
+      fullPath: '/api/store/admin/health'
+      preLoaderRoute: typeof ApiStoreAdminHealthRouteImport
+      parentRoute: typeof ApiStoreAdminRoute
+    }
+    '/api/store/cron/$job': {
+      id: '/api/store/cron/$job'
+      path: '/api/store/cron/$job'
+      fullPath: '/api/store/cron/$job'
+      preLoaderRoute: typeof ApiStoreCronJobRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/store/order/$token': {
+      id: '/api/store/order/$token'
+      path: '/api/store/order/$token'
+      fullPath: '/api/store/order/$token'
+      preLoaderRoute: typeof ApiStoreOrderTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/store/rpi/webhook': {
+      id: '/api/store/rpi/webhook'
+      path: '/api/store/rpi/webhook'
+      fullPath: '/api/store/rpi/webhook'
+      preLoaderRoute: typeof ApiStoreRpiWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/store/stripe/webhook': {
+      id: '/api/store/stripe/webhook'
+      path: '/api/store/stripe/webhook'
+      fullPath: '/api/store/stripe/webhook'
+      preLoaderRoute: typeof ApiStoreStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/store/admin/photos/$photoId': {
+      id: '/api/store/admin/photos/$photoId'
+      path: '/photos/$photoId'
+      fullPath: '/api/store/admin/photos/$photoId'
+      preLoaderRoute: typeof ApiStoreAdminPhotosPhotoIdRouteImport
+      parentRoute: typeof ApiStoreAdminRoute
+    }
+    '/api/store/order/$token/cancel': {
+      id: '/api/store/order/$token/cancel'
+      path: '/cancel'
+      fullPath: '/api/store/order/$token/cancel'
+      preLoaderRoute: typeof ApiStoreOrderTokenCancelRouteImport
+      parentRoute: typeof ApiStoreOrderTokenRoute
+    }
+    '/api/store/order/$token/reprint': {
+      id: '/api/store/order/$token/reprint'
+      path: '/reprint'
+      fullPath: '/api/store/order/$token/reprint'
+      preLoaderRoute: typeof ApiStoreOrderTokenReprintRouteImport
+      parentRoute: typeof ApiStoreOrderTokenRoute
+    }
+    '/api/store/order/$token/photos/$photoId': {
+      id: '/api/store/order/$token/photos/$photoId'
+      path: '/photos/$photoId'
+      fullPath: '/api/store/order/$token/photos/$photoId'
+      preLoaderRoute: typeof ApiStoreOrderTokenPhotosPhotoIdRouteImport
+      parentRoute: typeof ApiStoreOrderTokenRoute
+    }
+    '/api/store/order/$token/reprint/$requestId/photos': {
+      id: '/api/store/order/$token/reprint/$requestId/photos'
+      path: '/$requestId/photos'
+      fullPath: '/api/store/order/$token/reprint/$requestId/photos'
+      preLoaderRoute: typeof ApiStoreOrderTokenReprintRequestIdPhotosRouteImport
+      parentRoute: typeof ApiStoreOrderTokenReprintRoute
     }
   }
 }
@@ -337,19 +696,75 @@ const ApiLicensesRouteWithChildren = ApiLicensesRoute._addFileChildren(
   ApiLicensesRouteChildren,
 )
 
+interface ApiStoreAdminRouteChildren {
+  ApiStoreAdminHealthRoute: typeof ApiStoreAdminHealthRoute
+  ApiStoreAdminPhotosPhotoIdRoute: typeof ApiStoreAdminPhotosPhotoIdRoute
+}
+
+const ApiStoreAdminRouteChildren: ApiStoreAdminRouteChildren = {
+  ApiStoreAdminHealthRoute: ApiStoreAdminHealthRoute,
+  ApiStoreAdminPhotosPhotoIdRoute: ApiStoreAdminPhotosPhotoIdRoute,
+}
+
+const ApiStoreAdminRouteWithChildren = ApiStoreAdminRoute._addFileChildren(
+  ApiStoreAdminRouteChildren,
+)
+
+interface ApiStoreOrderTokenReprintRouteChildren {
+  ApiStoreOrderTokenReprintRequestIdPhotosRoute: typeof ApiStoreOrderTokenReprintRequestIdPhotosRoute
+}
+
+const ApiStoreOrderTokenReprintRouteChildren: ApiStoreOrderTokenReprintRouteChildren =
+  {
+    ApiStoreOrderTokenReprintRequestIdPhotosRoute:
+      ApiStoreOrderTokenReprintRequestIdPhotosRoute,
+  }
+
+const ApiStoreOrderTokenReprintRouteWithChildren =
+  ApiStoreOrderTokenReprintRoute._addFileChildren(
+    ApiStoreOrderTokenReprintRouteChildren,
+  )
+
+interface ApiStoreOrderTokenRouteChildren {
+  ApiStoreOrderTokenCancelRoute: typeof ApiStoreOrderTokenCancelRoute
+  ApiStoreOrderTokenReprintRoute: typeof ApiStoreOrderTokenReprintRouteWithChildren
+  ApiStoreOrderTokenPhotosPhotoIdRoute: typeof ApiStoreOrderTokenPhotosPhotoIdRoute
+}
+
+const ApiStoreOrderTokenRouteChildren: ApiStoreOrderTokenRouteChildren = {
+  ApiStoreOrderTokenCancelRoute: ApiStoreOrderTokenCancelRoute,
+  ApiStoreOrderTokenReprintRoute: ApiStoreOrderTokenReprintRouteWithChildren,
+  ApiStoreOrderTokenPhotosPhotoIdRoute: ApiStoreOrderTokenPhotosPhotoIdRoute,
+}
+
+const ApiStoreOrderTokenRouteWithChildren =
+  ApiStoreOrderTokenRoute._addFileChildren(ApiStoreOrderTokenRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AgentsRoute: AgentsRoute,
+  BookRoute: BookRoute,
+  TermsRoute: TermsRoute,
   DotwellKnownMcpDotjsonRoute: DotwellKnownMcpDotjsonRoute,
+  AdminStoreRoute: AdminStoreRoute,
   ApiFontsRoute: ApiFontsRoute,
   ApiLicensesRoute: ApiLicensesRouteWithChildren,
   ApiMcpRoute: ApiMcpRoute,
   ApiOgCompositionRoute: ApiOgCompositionRoute,
+  BookThanksRoute: BookThanksRoute,
   FontSlugRoute: FontSlugRoute,
   LicenseIdRoute: LicenseIdRoute,
+  OrderTokenRoute: OrderTokenRoute,
   ApiFontFileSlugRoute: ApiFontFileSlugRoute,
   ApiPreviewImageSlugRoute: ApiPreviewImageSlugRoute,
+  ApiStoreAdminRoute: ApiStoreAdminRouteWithChildren,
+  ApiStoreCheckoutRoute: ApiStoreCheckoutRoute,
+  ApiStoreStatusRoute: ApiStoreStatusRoute,
+  ApiStoreCronJobRoute: ApiStoreCronJobRoute,
+  ApiStoreOrderTokenRoute: ApiStoreOrderTokenRouteWithChildren,
+  ApiStoreRpiWebhookRoute: ApiStoreRpiWebhookRoute,
+  ApiStoreStripeWebhookRoute: ApiStoreStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
