@@ -9,6 +9,7 @@ artifacts
 .DS_Store
 .node_modules.lock
 .secrets/
+src/lib/admin-login.local.ts
 .env
 .env.*
 !.env.example

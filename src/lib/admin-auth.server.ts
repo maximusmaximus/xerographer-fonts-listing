@@ -55,10 +55,28 @@ function fromFile(): { username?: string; password?: string } {
   }
 }
 
+function bundled(): { username?: string; password?: string } {
+  try {
+    const mods = import.meta.glob("./admin-login.local.ts", { eager: true }) as Record<
+      string,
+      { localAdmin?: { username?: string; password?: string } }
+    >;
+    for (const mod of Object.values(mods)) {
+      const username = mod.localAdmin?.username?.trim();
+      const password = mod.localAdmin?.password?.trim();
+      if (username && password) return { username, password };
+    }
+  } catch {
+    /* node tests have no import.meta.glob */
+  }
+  return {};
+}
+
 export function adminCredentials(): { username: string; password: string } | null {
   const file = fromFile();
-  const username = process.env.ADMIN_USERNAME?.trim() || file.username || "";
-  const password = process.env.ADMIN_PASSWORD?.trim() || file.password || "";
+  const baked = bundled();
+  const username = process.env.ADMIN_USERNAME?.trim() || file.username || baked.username || "";
+  const password = process.env.ADMIN_PASSWORD?.trim() || file.password || baked.password || "";
   if (!username || !password) return null;
   return { username, password };
 }
