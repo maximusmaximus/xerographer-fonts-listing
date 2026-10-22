@@ -59,3 +59,9 @@ export function formatPt(d: Date): string {
     }).format(d) + " PT"
   );
 }
+
+/** Midnight PT at the start of the PT calendar day containing `now` (the buyer-facing daily cap day). */
+export function ptDayStart(now: Date): Date {
+  const p = ptParts(now);
+  return ptWallToUtc(p.y, p.m, p.d, 0);
+}

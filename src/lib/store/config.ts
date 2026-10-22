@@ -48,8 +48,8 @@ export function loadStoreConfig(get: (k: string) => string | undefined): { confi
       replyTo: get("STORE_REPLY_TO") ?? "maxinfeld@gmail.com",
       alertTo: get("ALERT_EMAIL_TO"),
       emailFrom: get("STORE_EMAIL_FROM") ?? get("RESEND_FROM") ?? "Xerographer Fonts <licenses@xerographer.fonts>",
-      dailyOrderCap: Math.floor(numEnv(get("DAILY_ORDER_CAP"), 5)),
-      dailyDollarCap: numEnv(get("DAILY_DOLLAR_CAP"), 750),
+      dailyOrderCap: Math.floor(numEnv(get("DAILY_ORDER_CAP"), 50)),
+      dailyDollarCap: numEnv(get("DAILY_DOLLAR_CAP"), 8000),
     },
   };
 }

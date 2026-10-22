@@ -58,7 +58,7 @@ export function confirmationEmail(deps: StoreDeps, order: OrderRow) {
   const s = SHIP_TEXT[order.ship_method ?? "standard"] ?? SHIP_TEXT.standard;
   const first = String(order.ship_name ?? "").split(" ")[0] || "there";
   const subject = `Your Xerographer Specimen Ledger is ordered (#${shortId(order.id)})`;
-  const text = `Thanks, ${first}. We've received ${money(order.amount_total_cents)} for 1 × Xerographer Specimen Ledger.
+  const text = `Thanks, ${first}. We've received ${money(order.amount_total_cents)} for 1 × Xerographer Specimen Ledger${order.edition_number ? `, copy ${order.edition_number} of 500` : ""} (limited edition of 500).
 
 Changed your mind? Cancel for a full refund before ${formatPt(new Date(order.cancel_deadline_utc))}: ${orderUrl(deps, order)}
 After that your copy goes to print and can't be cancelled or refunded.

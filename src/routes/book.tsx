@@ -21,7 +21,9 @@ function BookPage() {
   const [error, setError] = useState<string | null>(null);
   const [soldOutNow, setSoldOutNow] = useState(false);
   const open = status ? status.enabled && status.open : null;
-  const soldOut = soldOutNow || (status?.enabled === true && status.copiesLeft === 0);
+  const [editionGone, setEditionGone] = useState(false);
+  const editionSoldOut = editionGone || status?.editionSoldOut === true;
+  const soldOut = editionSoldOut || soldOutNow || (status?.enabled === true && status.copiesLeft === 0);
 
   async function buy() {
     setBusy(true);
@@ -31,6 +33,11 @@ function BookPage() {
       const d = (await r.json().catch(() => ({}))) as { url?: string; error?: string };
       if (r.ok && d.url) {
         window.location.assign(d.url);
+        return;
+      }
+      if (r.status === 409 && d.error === "edition_sold_out") {
+        setEditionGone(true);
+        setBusy(false);
         return;
       }
       if (r.status === 409 && d.error === "sold_out") {
@@ -57,7 +64,7 @@ function BookPage() {
           oversized specimen ledger.
         </p>
         <div className="mt-8 flex flex-wrap items-baseline gap-3">
-          <span className="font-display text-4xl">$199</span>
+          <span className="font-display text-4xl">$250</span>
           <span className="text-fg-muted">plus shipping at cost and sales tax</span>
         </div>
         <table className="mt-6 w-full text-sm">
@@ -77,6 +84,10 @@ function BookPage() {
           PT: until 4:00 PM PT the next day). Once it goes to print, no cancellations or refunds — misprints and
           shipping damage are replaced free. <Link to="/terms" className="underline">Terms of Sale</Link>
         </div>
+        <p className="mt-6 text-sm uppercase tracking-[0.18em]" data-testid="edition">
+          Limited edition of 500
+          {typeof status?.editionLeft === "number" && ` · ${editionSoldOut ? "sold out" : `${status.editionLeft} of 500 copies remaining`}`}
+        </p>
         <div className="mt-8">
           {open === false ? (
             <p className="text-fg-muted">Temporarily unavailable.</p>
@@ -84,11 +95,11 @@ function BookPage() {
             <>
               {status?.enabled && (
                 <p className="mb-3 text-sm" data-testid="copies-left">
-                  {soldOut ? "Sold out for today, back tomorrow" : `${status.copiesLeft} of ${status.dailyCap ?? status.copiesLeft} copies left today`}
+                  {editionSoldOut ? "Sold out: all 500 copies have been claimed" : soldOut ? "Sold out for today, back tomorrow" : `${status.copiesLeft} of ${status.dailyCap ?? status.copiesLeft} copies left today`}
                 </p>
               )}
               <Button size="lg" onClick={buy} disabled={busy || open === null || soldOut}>
-                {soldOut ? "Sold out for today" : busy ? "Opening checkout…" : "Buy — $199"}
+                {editionSoldOut ? "Sold out" : soldOut ? "Sold out for today" : busy ? "Opening checkout…" : "Buy — $250"}
               </Button>
             </>
           )}

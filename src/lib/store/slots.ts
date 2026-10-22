@@ -1,9 +1,9 @@
 /**
  * Copies left today + short reservations so two buyers can't both take the last copy.
- * Day boundary = capWindowStart (02:00 UTC), the same one the RPI exposure cap uses.
+ * Day boundary = midnight America/Los_Angeles (the PT calendar day buyers see).
  */
 import type { Db, StoreConfig } from "./types.ts";
-import { capWindowStart } from "./time.ts";
+import { ptDayStart } from "./time.ts";
 import { exposureUsd } from "./settings.ts";
 
 /** Reservation lifetime: Stripe's minimum session expiry (30 min) plus a minute of slack. */
@@ -25,7 +25,7 @@ async function dropExpired(db: Db, day: string, now: Date) {
 }
 
 export async function copiesLeft(db: Db, config: Pick<StoreConfig, "dailyOrderCap" | "dailyDollarCap">, now: Date) {
-  const day = capWindowStart(now).toISOString();
+  const day = ptDayStart(now).toISOString();
   await dropExpired(db, day, now);
   const [{ n }] = await db.query<{ n: number }>("select count(*)::int as n from store_daily_slots where day = $1", [day]);
   const cap = dailyCopyCap(config);
@@ -34,7 +34,7 @@ export async function copiesLeft(db: Db, config: Pick<StoreConfig, "dailyOrderCa
 
 /** Claim a free slot for `orderId`. Returns false when sold out. Race-safe via the (day, slot) PK. */
 export async function reserveSlot(db: Db, config: Pick<StoreConfig, "dailyOrderCap" | "dailyDollarCap">, orderId: string, now: Date): Promise<boolean> {
-  const day = capWindowStart(now).toISOString();
+  const day = ptDayStart(now).toISOString();
   const cap = dailyCopyCap(config);
   await dropExpired(db, day, now);
   for (let attempt = 0; attempt < cap + 1; attempt += 1) {

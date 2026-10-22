@@ -12,7 +12,9 @@ import { sendAlert, sendShipped, type OrderRow } from "./emails.ts";
 export const BOOK = {
   sku: "BKPH_HCIW_STD_11.750x11.750IN_80C_MT_40_100T_GLS_44",
   pageCount: 530,
-  retailPrice: "199.00",
+  retailPrice: "250.00",
+  priceCents: 25000,
+  editionSize: 500,
   itemDescription: "Xerographer Specimen Ledger (530pp)",
   // Template = RPI production order ord_06GKRYHG31TN7F4G5M8GY95ZHW (customerOrderId specimen-ledger-530pp-gls-003),
   // placed Oct 14, 2026 3:13 PM PT, preflight passed (0 fatal; autofix: rendering intent only), status SHIPPED.

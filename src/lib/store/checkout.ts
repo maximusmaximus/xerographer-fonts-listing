@@ -3,6 +3,7 @@ import { randomToken } from "./ids.ts";
 import { storeGuard } from "./settings.ts";
 import { audit } from "./state.ts";
 import { reserveSlot, releaseSlot } from "./slots.ts";
+import { reserveCopy, releaseCopy } from "./edition.ts";
 
 export const CHECKOUT_TEXT_SHIPPING =
   "Ships to the continental US (including DC) only. No Alaska, Hawaii, US territories, or APO/FPO addresses.";
@@ -25,7 +26,12 @@ export async function createCheckout(deps: StoreDeps): Promise<{ status: number;
   const token = randomToken();
   await deps.db.query("insert into store_orders (id, env, state) values ($1, $2, 'CHECKOUT_OPEN')", [token, deps.config.env]);
   const now = await deps.now();
+  if ((await reserveCopy(deps.db, token, now)) === null) {
+    await deps.db.query("update store_orders set state = 'EXPIRED', last_error = 'edition sold out' where id = $1", [token]);
+    return { status: 409, body: { error: "edition_sold_out", message: "Sold out: all 500 copies are taken" } };
+  }
   if (!(await reserveSlot(deps.db, deps.config, token, now))) {
+    await releaseCopy(deps.db, token);
     await deps.db.query("update store_orders set state = 'EXPIRED', last_error = 'sold out' where id = $1", [token]);
     return { status: 409, body: { error: "sold_out", message: "Sold out for today, back tomorrow" } };
   }
@@ -63,6 +69,7 @@ export async function createCheckout(deps: StoreDeps): Promise<{ status: number;
   );
   } catch (e) {
     await releaseSlot(deps.db, token);
+    await releaseCopy(deps.db, token);
     await deps.db.query("update store_orders set state = 'EXPIRED', last_error = 'checkout create failed' where id = $1", [token]);
     throw e;
   }

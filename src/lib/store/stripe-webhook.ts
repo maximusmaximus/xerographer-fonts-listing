@@ -1,8 +1,8 @@
 import type { StoreDeps } from "./types.ts";
 import { transition, audit } from "./state.ts";
 import { cancelDeadlineFor, isAfterTodayCutoff, nextPostChargeRunUtc } from "./time.ts";
-import { capCheck, storeGuard } from "./settings.ts";
-import { rpiCreate } from "./rpi.ts";
+import { capCheck, storeGuard, tripKillSwitch } from "./settings.ts";
+import { BOOK, rpiCreate } from "./rpi.ts";
 import { refundInFull } from "./refunds.ts";
 import { EXCLUDED_REGIONS, shipMethodForRate } from "./checkout.ts";
 import { sendAlert, sendOrderConfirmation, sendProblem, type OrderRow } from "./emails.ts";
@@ -135,6 +135,12 @@ async function onCheckoutCompleted(deps: StoreDeps, evtSession: Record<string, a
   }
 
   await sendOrderConfirmation(deps, paid);
+
+  if (s.amount_subtotal != null && s.amount_subtotal !== BOOK.priceCents) {
+    await tripKillSwitch(deps, `price mismatch: subtotal ${s.amount_subtotal} != ${BOOK.priceCents}`);
+    await transition(deps.db, order.id, "HELD", "system", "price mismatch");
+    return "held";
+  }
 
   const guard = await storeGuard(deps.db);
   const cap = await capCheck(deps.db, paidAt, paid.amount_shipping_cents ?? 0, deps.config);

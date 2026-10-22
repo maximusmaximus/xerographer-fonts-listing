@@ -69,7 +69,7 @@ If "enabled" is false, set STORE_ENV back to empty, republish, and tell me. Don'
 
 Do steps 1–5 **before** pasting the prompt (the prompt stops if they're missing).
 
-1. **Product and price (Stripe LIVE).** Create the product "Xerographer Specimen Ledger" with tax code **`txcd_35010000`** (Books, printed). Add a one-time price of **$199.00 USD** with tax behavior **exclusive**. Put the price id (`price_…`) in `STRIPE_PRICE_ID`.
+1. **Product and price (Stripe LIVE).** Create the product "Xerographer Specimen Ledger" with tax code **`txcd_35010000`** (Books, printed). Add a one-time price of **$250.00 USD** with tax behavior **exclusive**. Put the price id (`price_…`) in `STRIPE_PRICE_ID`.
 2. **Shipping rates.** Create three fixed rates, all with tax behavior exclusive: **Standard $6.99**, **Expedited $30.99**, **Rush $35.99**. Put their ids (`shr_…`) in `STRIPE_SHIPPING_RATE_STANDARD`, `STRIPE_SHIPPING_RATE_EXPEDITED` and `STRIPE_SHIPPING_RATE_RUSH`.
 3. **Stripe Tax.** Under Tax, set the origin address, add your CA registration, and turn on automatic tax.
 4. **Terms URL.** Under Settings → Public details, set the Terms of service URL to **`https://fonts.grok.me/terms`**. Checkout's required checkbox won't work without it.

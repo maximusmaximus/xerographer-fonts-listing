@@ -25,6 +25,7 @@ import { createReprintRequest, readPhoto, sniffImage, uploadClaimPhoto, purgePho
 import { resendMailer } from "./emails.ts";
 import { checkAdmin, adminAction } from "./admin.ts";
 import { copiesLeft, dailyCopyCap, reserveSlot } from "./slots.ts";
+import { EDITION_SIZE, editionStatus, reserveCopy } from "./edition.ts";
 
 const root = new URL("../../../", import.meta.url);
 
@@ -133,7 +134,7 @@ describe("signatures", () => {
 async function freshDb(): Promise<Db> {
   const pg = new PGlite();
   await pg.waitReady;
-  for (const f of ["0002_licenses.sql", "0003_store.sql", "0004_store_daily_slots.sql"]) await pg.exec(readFileSync(new URL(`migrations/${f}`, root), "utf8"));
+  for (const f of ["0002_licenses.sql", "0003_store.sql", "0004_store_daily_slots.sql", "0005_store_edition.sql"]) await pg.exec(readFileSync(new URL(`migrations/${f}`, root), "utf8"));
   return { query: async (t, p) => (await pg.query(t, p as unknown[])).rows as never };
 }
 
@@ -141,6 +142,7 @@ type Harness = ReturnType<typeof makeHarness> extends Promise<infer T> ? T : nev
 
 async function makeHarness() {
   const db = await freshDb();
+  await db.query("update store_settings set value = 'true' where key = 'ORDERS_ENABLED'"); // migrations ship OFF; tests open it
   const clock = { now: new Date("2026-10-13T17:00:00Z") }; // 10 AM PDT
   const calls = { creates: [] as any[], gets: [] as string[], cancels: [] as string[], refunds: [] as any[], emails: [] as any[], sessions: [] as any[] };
   const rpiState = new Map<string, string>();
@@ -150,7 +152,7 @@ async function makeHarness() {
   const deps: StoreDeps = {
     db,
     config: {
-      env: "sbx", publicBaseUrl: "https://test-copy.example", stripePriceId: "price_199",
+      env: "sbx", publicBaseUrl: "https://test-copy.example", stripePriceId: "price_250",
       shippingRates: { standard: "shr_std", expedited: "shr_exp", rush: "shr_rush" },
       rpiBaseUrl: "https://rpi.invalid", replyTo: "maxinfeld@gmail.com", alertTo: "ops@example.com", emailFrom: "Store <s@example.com>",
       dailyOrderCap: 5, dailyDollarCap: 750,
@@ -167,7 +169,7 @@ async function makeHarness() {
           async retrieve(id) {
             const p = sessions.get(id);
             return {
-              id, payment_status: "paid", amount_total: 21649,
+              id, payment_status: "paid", amount_subtotal: p?.__subtotal ?? 25000, amount_total: 26749,
               total_details: { amount_tax: 1050, amount_shipping: 699 },
               shipping_cost: { amount_total: 699, shipping_rate: { id: p?.__rate ?? "shr_std" } },
               customer_details: { email: "buyer@example.com", phone: "+15555550100", name: "Pat Buyer" },
@@ -237,7 +239,7 @@ describe("checkout + Stripe webhook -> RPI", () => {
     await createCheckout(h.deps);
     const p = h.calls.sessions[0];
     assert.equal(p.mode, "payment");
-    assert.deepEqual(p.line_items, [{ price: "price_199", quantity: 1 }]);
+    assert.deepEqual(p.line_items, [{ price: "price_250", quantity: 1 }]);
     assert.deepEqual(p.shipping_address_collection, { allowed_countries: ["US"] });
     assert.equal(p.shipping_options.length, 3);
     assert.equal(p.automatic_tax.enabled, true);
@@ -567,11 +569,12 @@ describe("copies left today + reservations", () => {
       STRIPE_SHIPPING_RATE_STANDARD: "a", STRIPE_SHIPPING_RATE_EXPEDITED: "b", STRIPE_SHIPPING_RATE_RUSH: "c",
     };
     const c = (o: Record<string, string>) => loadStoreConfig((k) => ({ ...base, ...o })[k]).config!;
-    assert.equal(c({}).dailyOrderCap, 5);
-    assert.equal(c({}).dailyDollarCap, 750);
+    assert.equal(c({}).dailyOrderCap, 50);
+    assert.equal(c({}).dailyDollarCap, 8000);
     assert.equal(c({ DAILY_ORDER_CAP: "1" }).dailyOrderCap, 1);
-    assert.equal(c({ DAILY_ORDER_CAP: "abc", DAILY_DOLLAR_CAP: "-3" }).dailyOrderCap, 5);
-    assert.equal(c({ DAILY_DOLLAR_CAP: "-3" }).dailyDollarCap, 750);
+    assert.equal(c({ DAILY_ORDER_CAP: "abc", DAILY_DOLLAR_CAP: "-3" }).dailyOrderCap, 50);
+    assert.equal(c({ DAILY_DOLLAR_CAP: "-3" }).dailyDollarCap, 8000);
+    assert.equal(dailyCopyCap({ dailyOrderCap: 50, dailyDollarCap: 8000 }), 50);
     assert.equal(dailyCopyCap({ dailyOrderCap: 5, dailyDollarCap: 750 }), 5);
     assert.equal(dailyCopyCap({ dailyOrderCap: 10, dailyDollarCap: 750 }), 6); // $120.55 each at Standard
   });
@@ -605,12 +608,14 @@ describe("copies left today + reservations", () => {
     assert.equal(wins.filter(Boolean).length, 1);
   });
 
-  it("sold out until the 02:00 UTC day boundary, then back", async () => {
+  it("sold out until midnight PT, then back", async () => {
     h.deps.config.dailyOrderCap = 1;
     await h.checkoutAndPay();
     assert.equal(await left(), 0);
     assert.equal((await createCheckout(h.deps)).status, 409);
-    h.clock.now = new Date("2026-10-14T02:00:00Z");
+    h.clock.now = new Date("2026-10-14T06:59:00Z"); // 11:59 PM PDT, same PT day
+    assert.equal(await left(), 0);
+    h.clock.now = new Date("2026-10-14T07:00:00Z"); // midnight PDT
     assert.equal(await left(), 1);
   });
 });
@@ -648,5 +653,105 @@ describe("emoji-store parity", () => {
     const { config } = loadStoreConfig((k) => ({ STORE_ENV: "sbx", PUBLIC_BASE_URL: "https://test.example", STRIPE_SECRET_KEY: "sk_test_x", STRIPE_PRICE_ID: "p", STRIPE_SHIPPING_RATE_STANDARD: "a", STRIPE_SHIPPING_RATE_EXPEDITED: "b", STRIPE_SHIPPING_RATE_RUSH: "c" } as Record<string, string>)[k]);
     if (config) assert.equal(config.replyTo, "maxinfeld@gmail.com");
     assert.equal(BOOK.sku, "BKPH_HCIW_STD_11.750x11.750IN_80C_MT_40_100T_GLS_44");
+  });
+});
+
+describe("limited edition of 500 + 50/day + $250", () => {
+  let h: Harness;
+  beforeEach(async () => (h = await makeHarness()));
+  const fill = async (n: number, paid = true) => {
+    for (let i = 1; i <= n; i += 1) {
+      const id = `fill${i}`;
+      await h.db.query("insert into store_orders (id, env, state) values ($1, 'sbx', $2)", [id, paid ? "PAID" : "CHECKOUT_OPEN"]);
+      await h.db.query("insert into store_edition_copies (copy_no, order_id, expires_at) values ($1, $2, $3)", [i, id, paid ? null : new Date(h.clock.now.getTime() + 60_000).toISOString()]);
+    }
+  };
+
+  it("numbers each paid copy (n of 500) on the order and in the confirmation email; RPI retail is 250.00", async () => {
+    const { token } = await h.checkoutAndPay();
+    const o = await h.order(token);
+    assert.equal(o.edition_number, 1);
+    assert.ok(h.calls.emails.some((e) => /copy 1 of 500/.test(e.text)));
+    assert.equal(BOOK.retailPrice, "250.00");
+    assert.equal(BOOK.priceCents, 25000);
+    const second = await h.checkoutAndPay();
+    assert.equal((await h.order(second.token)).edition_number, 2);
+    const st = await editionStatus(h.db, h.clock.now);
+    assert.deepEqual([st.sold, st.left, st.soldOut], [2, 498, false]);
+  });
+
+  it("sold out at 500: checkout refused before Stripe is called", async () => {
+    await fill(EDITION_SIZE);
+    const before = h.calls.sessions.length;
+    const r = await createCheckout(h.deps);
+    assert.equal(r.status, 409);
+    assert.equal(r.body.error, "edition_sold_out");
+    assert.equal(h.calls.sessions.length, before);
+    assert.equal((await editionStatus(h.db, h.clock.now)).soldOut, true);
+  });
+
+  it("expired, cancelled and refunded orders release their copy", async () => {
+    await fill(EDITION_SIZE - 1);
+    await createCheckout(h.deps);
+    const token = h.calls.sessions.at(-1).metadata.order_token;
+    assert.equal((await editionStatus(h.db, h.clock.now)).left, 0);
+    await handleStripeEvent(h.deps, { id: "evt_exp_ed", type: "checkout.session.expired", data: { object: { id: h.calls.sessions.length ? `cs_test_${h.calls.sessions.length}` : "" } } });
+    assert.equal((await h.order(token)).state, "EXPIRED");
+    assert.equal((await editionStatus(h.db, h.clock.now)).left, 1);
+    const paid = await h.checkoutAndPay();
+    assert.equal((await h.order(paid.token)).edition_number, EDITION_SIZE);
+    assert.equal((await editionStatus(h.db, h.clock.now)).soldOut, true);
+    await requestCancel(h.deps, await h.order(paid.token), "customer");
+    assert.equal((await h.order(paid.token)).state, "CANCELLED_REFUNDED");
+    assert.equal((await editionStatus(h.db, h.clock.now)).left, 1);
+  });
+
+  it("stale reservations past their expiry free up", async () => {
+    await fill(EDITION_SIZE, false);
+    assert.equal((await editionStatus(h.db, h.clock.now)).left, 0);
+    h.clock.now = new Date(h.clock.now.getTime() + 2 * 60_000);
+    assert.equal((await editionStatus(h.db, h.clock.now)).left, EDITION_SIZE);
+  });
+
+  it("race for the last copies: never more than 500 taken, distinct numbers", async () => {
+    await fill(EDITION_SIZE - 3);
+    const ids = Array.from({ length: 12 }, (_, i) => `race${i}`);
+    for (const id of ids) await h.db.query("insert into store_orders (id, env, state) values ($1, 'sbx', 'CHECKOUT_OPEN')", [id]);
+    const got = await Promise.all(ids.map((id) => reserveCopy(h.db, id, h.clock.now)));
+    const won = got.filter((n): n is number => n !== null);
+    assert.equal(won.length, 3);
+    assert.deepEqual([...won].sort((a, b) => a - b), [498, 499, 500]);
+    const [{ n }] = await h.db.query<{ n: number }>("select count(*)::int as n from store_edition_copies");
+    assert.equal(n, EDITION_SIZE);
+  });
+
+  it("daily cap of 50 per PT day", async () => {
+    h.deps.config.dailyOrderCap = 50;
+    h.deps.config.dailyDollarCap = 8000;
+    for (let i = 0; i < 50; i += 1) assert.equal((await createCheckout(h.deps)).status, 200);
+    const r = await createCheckout(h.deps);
+    assert.equal(r.status, 409);
+    assert.equal(r.body.error, "sold_out");
+    assert.equal((await editionStatus(h.db, h.clock.now)).reserved, 50); // the 51st released its edition copy
+    h.clock.now = new Date("2026-10-14T07:00:00Z"); // next PT day
+    assert.equal((await createCheckout(h.deps)).status, 200);
+  });
+
+  it("a paid subtotal other than $250 trips the kill switch and holds the order", async () => {
+    await createCheckout(h.deps);
+    const sid = `cs_test_${h.calls.sessions.length}`;
+    h.calls.sessions.at(-1).__subtotal = 19900;
+    const token = h.calls.sessions.at(-1).metadata.order_token;
+    await handleStripeEvent(h.deps, { id: "evt_px", type: "checkout.session.completed", data: { object: { id: sid, payment_status: "paid", metadata: { order_token: token } } } });
+    assert.equal((await h.order(token)).state, "HELD");
+    assert.equal(await getSetting(h.db, "ORDERS_ENABLED"), "false");
+  });
+
+  it("migrations ship sales OFF", async () => {
+    const pg = new PGlite();
+    await pg.waitReady;
+    for (const f of ["0002_licenses.sql", "0003_store.sql", "0004_store_daily_slots.sql", "0005_store_edition.sql"]) await pg.exec(readFileSync(new URL(`migrations/${f}`, root), "utf8"));
+    const r = await pg.query<{ value: string }>("select value from store_settings where key = 'ORDERS_ENABLED'");
+    assert.equal(r.rows[0].value, "false");
   });
 });

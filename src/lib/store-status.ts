@@ -1,7 +1,7 @@
 /** Client-side, cached read of /api/store/status (decided on the server). */
 import { useEffect, useState } from "react";
 
-export type StoreStatus = { enabled: boolean; open: boolean; copiesLeft: number; dailyCap?: number; soldOut?: boolean };
+export type StoreStatus = { enabled: boolean; open: boolean; copiesLeft: number; dailyCap?: number; soldOut?: boolean; editionSize?: number; editionLeft?: number | null; editionSoldOut?: boolean };
 
 let cached: Promise<StoreStatus> | null = null;
 

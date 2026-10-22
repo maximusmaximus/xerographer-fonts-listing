@@ -16,7 +16,7 @@ All are server-only. None may use a `VITE_` prefix.
 | `PUBLIC_BASE_URL` | no | the test copy's URL (must NOT be fonts.grok.me) | `https://fonts.grok.me` |
 | `STRIPE_SECRET_KEY` | **yes** | Stripe **test** restricted key (`rk_test_…`) | Stripe **live** restricted key (`rk_live_…`) |
 | `STRIPE_WEBHOOK_SECRET` | **yes** | test endpoint signing secret | separate live endpoint signing secret |
-| `STRIPE_PRICE_ID` | no | test $199 price | live $199 price |
+| `STRIPE_PRICE_ID` | no | test $250 price | live $250 price |
 | `STRIPE_SHIPPING_RATE_STANDARD` / `_EXPEDITED` / `_RUSH` | no | test rate ids | live rate ids |
 | `RPI_BASE_URL` | no | `https://open.api.rpiprint.com` (default) | same |
 | `RPI_API_AUTH` | **yes** | RPI **sandbox** key's full Authorization header value (`Basic …`) | a **new** RPI production key |
@@ -25,8 +25,8 @@ All are server-only. None may use a `VITE_` prefix.
 | `ADMIN_TOKEN` | **yes** | random | a different random value |
 | `ALERT_EMAIL_TO` | no | Max's ops inbox | same |
 | `STORE_REPLY_TO` | no | `maxinfeld@gmail.com` (default) | same |
-| `DAILY_ORDER_CAP` | no | optional, default `5` (set `1` to test sold-out) | optional, default `5` |
-| `DAILY_DOLLAR_CAP` | no | optional, default `750` (USD of estimated RPI cost per day) | optional, default `750` |
+| `DAILY_ORDER_CAP` | no | optional, default `50` per PT day (set `1` to test sold-out) | optional, default `50` |
+| `DAILY_DOLLAR_CAP` | no | optional, default `8000` (USD of estimated RPI cost per day; fits 50 copies at any shipping) | optional, default `8000` |
 | `STORE_EMAIL_FROM` | no | optional; falls back to `RESEND_FROM` | same |
 | `RESEND_API_KEY` | **yes** | existing app key (already used by license emails) | same |
 | `DATABASE_URL` | **yes** | the test copy's own Neon | live Neon |
@@ -41,7 +41,7 @@ Events read, Disputes and Radar early-fraud-warnings read. API version pinned in
 ## Stripe (test mode first)
 
 1. Product "Xerographer Specimen Ledger", tax code **`txcd_35010000`** (Books — printed; checked against
-   Stripe's tax-code list). One-time price **$199.00**, `tax_behavior: exclusive`.
+   Stripe's tax-code list). One-time price **$250.00**, `tax_behavior: exclusive`.
 2. Shipping rates (exclusive tax): Standard $6.99, Expedited $30.99, Rush $35.99.
 3. Stripe Tax: origin address, CA registration, enable automatic tax.
 4. Settings → Public details: Terms of service URL = `<PUBLIC_BASE_URL>/terms` (Checkout's required checkbox needs it).
@@ -71,7 +71,7 @@ Stale (>300 s) or wrong signatures → 401; a replayed timestamp → 409; GET �
 ## Admin
 
 `/admin/store` — enter `ADMIN_TOKEN` (kept in the tab's sessionStorage, sent as `x-admin-token`).
-Kill switch, daily caps (env `DAILY_ORDER_CAP` / `DAILY_DOLLAR_CAP`, default 5 orders / $750; copies left today = cap minus paid or reserved orders since 02:00 UTC; a checkout holds a copy for 31 minutes), Release HELD, Cancel+Refund (with "Max override"),
+Kill switch, daily caps (env `DAILY_ORDER_CAP` / `DAILY_DOLLAR_CAP`, default 50 orders per PT day / $8000 RPI cost; limited edition of 500 enforced in `store_edition_copies`; copies left today = cap minus paid or reserved orders since 02:00 UTC; a checkout holds a copy for 31 minutes), Release HELD, Cancel+Refund (with "Max override"),
 Approve/Decline reprint, Place replacement order (`-rp1`), claim photos, test emails, RPI ping.
 Sandbox only: clock override and "drop next RPI webhook".
 
