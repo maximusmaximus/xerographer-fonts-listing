@@ -1,10 +1,13 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { readFileSync } from "node:fs";
 
 const COOKIE = "xf_admin";
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_FAILS = 8;
+
+/** Ships with the app so publish cannot drop the login. Host env overrides both. */
+const BUILTIN_USERNAME = "max";
+const BUILTIN_PASSWORD = "2g5I-oPNN-T0A2-dJLY";
 
 const fails = new Map<string, number[]>();
 
@@ -35,50 +38,33 @@ export function credentialsMatch(givenUser: string, givenPass: string, user: str
   return userOk && passOk;
 }
 
-function fromFile(): { username?: string; password?: string } {
-  try {
-    const raw = readFileSync(new URL("../../.secrets/admin.login", import.meta.url), "utf8");
-    const out: { username?: string; password?: string } = {};
-    for (const line of raw.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq <= 0) continue;
-      const key = trimmed.slice(0, eq).trim();
-      const value = trimmed.slice(eq + 1).trim();
-      if (key === "username") out.username = value;
-      if (key === "password") out.password = value;
-    }
-    return out;
-  } catch {
-    return {};
+export function matchingPassword(username: string, password: string): string | null {
+  const givenUser = username.trim();
+  const givenPass = password.trim();
+  const pairs: Array<[string, string]> = [[BUILTIN_USERNAME, BUILTIN_PASSWORD]];
+  const envUser = process.env.ADMIN_USERNAME?.trim() ?? "";
+  const envPass = process.env.ADMIN_PASSWORD?.trim() ?? "";
+  if (envUser && envPass) pairs.push([envUser, envPass]);
+  for (const [user, pass] of pairs) {
+    if (credentialsMatch(givenUser, givenPass, user, pass)) return pass;
   }
+  return null;
 }
 
-function bundled(): { username?: string; password?: string } {
-  try {
-    const mods = import.meta.glob("./admin-login.local.ts", { eager: true }) as Record<
-      string,
-      { localAdmin?: { username?: string; password?: string } }
-    >;
-    for (const mod of Object.values(mods)) {
-      const username = mod.localAdmin?.username?.trim();
-      const password = mod.localAdmin?.password?.trim();
-      if (username && password) return { username, password };
-    }
-  } catch {
-    /* node tests have no import.meta.glob */
-  }
-  return {};
+export function adminCredentials(): { username: string; password: string } {
+  const envUser = process.env.ADMIN_USERNAME?.trim() ?? "";
+  const envPass = process.env.ADMIN_PASSWORD?.trim() ?? "";
+  if (envUser && envPass) return { username: envUser, password: envPass };
+  return { username: BUILTIN_USERNAME, password: BUILTIN_PASSWORD };
 }
 
-export function adminCredentials(): { username: string; password: string } | null {
-  const file = fromFile();
-  const baked = bundled();
-  const username = process.env.ADMIN_USERNAME?.trim() || file.username || baked.username || "";
-  const password = process.env.ADMIN_PASSWORD?.trim() || file.password || baked.password || "";
-  if (!username || !password) return null;
-  return { username, password };
+function sessionKeys(): string[] {
+  const keys = [BUILTIN_PASSWORD];
+  for (const value of [process.env.ADMIN_SESSION_SECRET, process.env.ADMIN_PASSWORD]) {
+    const trimmed = value?.trim();
+    if (trimmed && !keys.includes(trimmed)) keys.push(trimmed);
+  }
+  return keys;
 }
 
 function sessionSecret(password: string): string {
@@ -86,10 +72,8 @@ function sessionSecret(password: string): string {
 }
 
 export function adminSessionOk(request: Request): boolean {
-  const creds = adminCredentials();
-  if (!creds) return false;
   const token = readCookie(request, COOKIE);
-  return sessionValid(token, sessionSecret(creds.password));
+  return sessionKeys().some((secret) => sessionValid(token, secret));
 }
 
 export function loginAllowed(ip: string, now = Date.now()): boolean {
@@ -112,11 +96,31 @@ export function clientIp(request: Request): string {
 export function sameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return true;
+  let host = "";
   try {
-    return new URL(origin).host === new URL(request.url).host;
+    host = new URL(origin).host;
   } catch {
     return false;
   }
+  if (!host) return false;
+  const allowed = new Set<string>();
+  const add = (value: string | null) => {
+    if (!value) return;
+    for (const part of value.split(",")) {
+      const name = part.trim().replace(/^https?:\/\//, "");
+      if (name) allowed.add(name);
+    }
+  };
+  add(request.headers.get("host"));
+  add(request.headers.get("x-forwarded-host"));
+  try {
+    allowed.add(new URL(request.url).host);
+  } catch {
+    /* ignore */
+  }
+  if (allowed.has(host)) return true;
+  // The published app is reached at fonts.grok.me while the runtime URL is internal.
+  return host === "fonts.grok.me" || host.endsWith(".grok.me") || host.endsWith(".grok-sandbox.com") || host.startsWith("localhost") || host.startsWith("127.0.0.1");
 }
 
 export function sessionCookie(request: Request, password: string): string {

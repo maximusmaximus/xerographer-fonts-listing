@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  adminCredentials,
   clearCookie,
   clientIp,
-  credentialsMatch,
   loginAllowed,
+  matchingPassword,
   noteLoginFailure,
   sameOrigin,
   sessionCookie,
@@ -26,7 +25,6 @@ export const Route = createFileRoute("/api/admin/login")({
         if (!sameOrigin(request)) return json(403, { error: "bad origin" });
         const ip = clientIp(request);
         if (!loginAllowed(ip)) return json(429, { error: "too many tries" });
-        const creds = adminCredentials();
         let username = "";
         let password = "";
         try {
@@ -36,11 +34,12 @@ export const Route = createFileRoute("/api/admin/login")({
         } catch {
           return json(400, { error: "bad request" });
         }
-        if (!creds || !credentialsMatch(username, password, creds.username, creds.password)) {
+        const matched = matchingPassword(username, password);
+        if (!matched) {
           noteLoginFailure(ip);
           return json(401, { error: "wrong" });
         }
-        return json(200, { ok: true }, sessionCookie(request, creds.password));
+        return json(200, { ok: true }, sessionCookie(request, matched));
       },
       DELETE: async ({ request }) => json(200, { ok: true }, clearCookie(request)),
     },
