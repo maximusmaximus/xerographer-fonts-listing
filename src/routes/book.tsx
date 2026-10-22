@@ -4,12 +4,10 @@ import { useStoreStatus } from "@/lib/store-status";
 import { PageShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { BOOK_PRODUCT_DEFAULTS, type BookProduct } from "@/lib/product";
+import { loadBookProduct } from "@/lib/book-product";
 
 export const Route = createFileRoute("/book")({
-  loader: async () => {
-    const { getBookProduct } = await import("@/lib/product.server");
-    return getBookProduct();
-  },
+  loader: () => loadBookProduct(),
   head: () => ({ meta: [{ title: "Xerographer Specimen Ledger — Xerographer Fonts" }] }),
   component: BookPage,
 });
