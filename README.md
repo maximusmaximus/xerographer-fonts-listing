@@ -50,6 +50,8 @@ Production secrets are environment variables on the host that runs [fonts.grok.m
 | `RESEND_API_KEY` | No | Sends the license PDF by email |
 | `RESEND_FROM` | No | From-address. Default `Xerographer Fonts <licenses@xerographer.fonts>` |
 
+The Specimen Ledger store uses more names (`STORE_ENV`, `PUBLIC_BASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, the three `STRIPE_SHIPPING_RATE_*` ids, `RPI_API_AUTH`, `RPI_WEBHOOK_SECRET`, `CRON_SECRET`, `ADMIN_TOKEN`, `ALERT_EMAIL_TO`). It stays off until those are set on the host. There is no admin username or password. `/admin/store` asks for `ADMIN_TOKEN` only. Full list: [STORE-SETUP.md](STORE-SETUP.md) and [`.env.example`](.env.example).
+
 Rules for every update:
 
 1. Never commit a secret value. `.env`, `.env.*` except `.env.example`, and `.secrets/` stay ignored.
