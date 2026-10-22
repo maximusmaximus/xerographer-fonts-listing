@@ -46,3 +46,11 @@ export const promoSrc = (file: string, size: 640 | 1200) => `/book/preview/${fil
 export function wrapIndex(i: number, n: number): number {
   return ((i % n) + n) % n;
 }
+
+export const SWIPE_THRESHOLD_PX = 40;
+
+/** +1 = next page, -1 = previous, 0 = not a horizontal swipe. */
+export function swipeDirection(dx: number, dy: number, threshold = SWIPE_THRESHOLD_PX): -1 | 0 | 1 {
+  if (Math.abs(dx) < threshold || Math.abs(dx) <= Math.abs(dy)) return 0;
+  return dx < 0 ? 1 : -1;
+}

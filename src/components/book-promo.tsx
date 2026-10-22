@@ -8,7 +8,7 @@ import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as R
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
-  PROMO_PAGES, PROMO_SESSION_KEY, PROMO_STORAGE_KEY, promoSrc, shouldShowPromo, wrapIndex,
+  PROMO_PAGES, PROMO_SESSION_KEY, PROMO_STORAGE_KEY, promoSrc, shouldShowPromo, swipeDirection, wrapIndex,
 } from "@/lib/book-promo";
 import { fetchStoreStatus } from "@/lib/store-status";
 
@@ -127,8 +127,8 @@ export function BookPromo() {
     const s = start.current;
     start.current = null;
     if (!s) return;
-    const dx = e.clientX - s.x, dy = e.clientY - s.y;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+    const d = swipeDirection(e.clientX - s.x, e.clientY - s.y);
+    if (d) go(d);
   };
 
   if (!open) return null;
@@ -148,7 +148,7 @@ export function BookPromo() {
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className={`relative flex w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-bg-elevated text-fg shadow-2xl sm:max-w-[min(920px,100%)] sm:rounded-2xl md:flex-row ${motion}`}
+        className={`relative flex w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-bg-elevated text-fg shadow-2xl sm:max-w-[min(920px,100%)] sm:rounded-2xl [@media(min-width:1024px)_and_(orientation:landscape)]:flex-row ${motion}`}
         style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)", height: "auto" }}
       >
         <button
@@ -161,9 +161,9 @@ export function BookPromo() {
         </button>
 
         {/* Carousel */}
-        <div className="relative shrink md:w-[55%] md:shrink-0">
+        <div className="relative shrink-0 [@media(min-width:1024px)_and_(orientation:landscape)]:w-[55%]">
           <div
-            className="relative mx-auto aspect-square w-full max-h-[52dvh] touch-pan-y select-none bg-bg-subtle md:max-h-[min(640px,80dvh)]"
+            className="relative mx-auto aspect-square h-[min(34dvh,100vw)] w-auto touch-pan-y select-none bg-bg-subtle sm:h-[min(48dvh,640px)] [@media(min-width:1024px)_and_(orientation:landscape)]:h-auto [@media(min-width:1024px)_and_(orientation:landscape)]:w-full [@media(min-width:1024px)_and_(orientation:landscape)]:max-h-[min(640px,80dvh)]"
             onPointerDown={onDown}
             onPointerUp={onUp}
             onPointerCancel={() => (start.current = null)}
@@ -195,7 +195,7 @@ export function BookPromo() {
               <ChevronRight className="size-5" aria-hidden />
             </button>
           </div>
-          <div className="flex items-center justify-center gap-1.5 py-2" aria-live="polite">
+          <div className="flex items-center justify-center gap-1.5 py-1.5" aria-live="polite">
             {PROMO_PAGES.map((p, i) => (
               <button
                 key={p.file}
@@ -212,24 +212,25 @@ export function BookPromo() {
 
         {/* Copy + CTA */}
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-3 sm:px-6 md:pt-10">
-            <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">The book</p>
-            <h2 id={titleId} className="mt-1 font-display text-2xl sm:text-3xl">Xerographer Specimen Ledger</h2>
-            <p id={descId} className="mt-2 text-sm text-fg-muted">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-1 sm:px-6 sm:pt-3 [@media(min-width:1024px)_and_(orientation:landscape)]:pt-10">
+            <p className="hidden text-xs uppercase tracking-[0.22em] text-fg-muted sm:block">The book</p>
+            <h2 id={titleId} className="font-display text-xl leading-tight sm:mt-1 sm:text-3xl">Xerographer Specimen Ledger</h2>
+            <p id={descId} className="mt-1 text-[13px] leading-snug text-fg-muted sm:mt-2 sm:text-sm">
               All 1,376 Xerographer typefaces in one 530-page hardcover, 11.75 × 11.75 in, full color on 100# gloss.
             </p>
-            <p className="mt-3 flex items-baseline gap-2">
-              <span className="font-display text-3xl">$250</span>
+            <p className="mt-1.5 flex items-baseline gap-2 sm:mt-3">
+              <span className="font-display text-2xl sm:text-3xl">$250</span>
               <span className="text-xs text-fg-muted">plus shipping and sales tax</span>
             </p>
-            <p className="mt-2 text-sm font-medium" data-testid="promo-edition">
+            <p className="mt-0.5 text-[13px] font-medium sm:mt-2 sm:text-sm" data-testid="promo-edition">
               Limited edition: only 500 copies{left !== null ? ` · ${left} remaining` : ""}
             </p>
-            <p className="mt-3 hidden text-sm text-fg-muted sm:block">Swipe through ten sample pages, from the cover to the closing art.</p>
-            <p className="mt-2 text-sm text-fg-muted sm:hidden">Swipe through ten sample pages.</p>
+            <p className="mt-1 text-[13px] leading-snug text-fg-muted sm:mt-3 sm:text-sm" data-testid="promo-intro">
+              Swipe through ten sample pages, from the cover to the closing art.
+            </p>
           </div>
-          <div className="border-t border-border bg-bg-elevated px-5 py-3 sm:px-6 md:border-0 md:pb-8"
-            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+          <div className="border-t border-border bg-bg-elevated px-4 py-2.5 sm:px-6 sm:py-3 [@media(min-width:1024px)_and_(orientation:landscape)]:border-0 [@media(min-width:1024px)_and_(orientation:landscape)]:pb-8"
+            style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
             <Button asChild size="lg" className="w-full">
               <Link to="/book" data-autofocus onClick={() => store("local")?.setItem(PROMO_STORAGE_KEY, String(Date.now()))}>
                 BUY NOW

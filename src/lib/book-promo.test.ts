@@ -45,3 +45,15 @@ describe("book promo", () => {
     assert.equal(wrapIndex(3, 10), 3);
   });
 });
+
+describe("swipe", () => {
+  it("needs a horizontal move past the threshold", async () => {
+    const { swipeDirection, SWIPE_THRESHOLD_PX } = await import("./book-promo.ts");
+    assert.equal(swipeDirection(-80, 5), 1);
+    assert.equal(swipeDirection(80, -5), -1);
+    assert.equal(swipeDirection(-(SWIPE_THRESHOLD_PX - 1), 0), 0);
+    assert.equal(swipeDirection(-SWIPE_THRESHOLD_PX, 0), 1);
+    assert.equal(swipeDirection(-60, 90), 0); // vertical scroll wins
+    assert.equal(swipeDirection(0, 0), 0);
+  });
+});
