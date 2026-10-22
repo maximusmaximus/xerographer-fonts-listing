@@ -28,6 +28,7 @@ function AdminStore() {
   const [data, setData] = useState<Summary | null>(null);
   const [msg, setMsg] = useState("");
   const [override, setOverride] = useState(false);
+  const [health, setHealth] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => setToken(sessionStorage.getItem(KEY) ?? ""), []);
 
@@ -44,6 +45,8 @@ function AdminStore() {
       return;
     }
     setData((await r.json()) as Summary);
+    const h = await fetch("/api/store/admin/health", { headers: { "x-admin-token": token } });
+    setHealth(h.ok ? ((await h.json()) as Record<string, unknown>) : null);
   }, [token]);
   useEffect(() => void load(), [load]);
 
@@ -140,6 +143,8 @@ function AdminStore() {
           ))}
         </tbody>
       </table>
+      <h2 className="text-xl">Health</h2>
+      {health ? <HealthList value={health} /> : <p className="text-sm">Health unavailable.</p>}
       <h2 className="text-xl">Reprint requests</h2>
       {data.requests.map((r) => (
         <div key={r.id} className="rounded border p-3">
@@ -157,5 +162,19 @@ function AdminStore() {
       ))}
       {msg && <pre className="whitespace-pre-wrap">{msg}</pre>}
     </main>
+  );
+}
+
+function HealthList({ value, prefix = "" }: { value: Record<string, unknown>; prefix?: string }) {
+  return (
+    <ul className="text-sm">
+      {Object.entries(value).map(([k, v]) =>
+        v && typeof v === "object" ? (
+          <li key={k}><b>{prefix + k}</b><HealthList value={v as Record<string, unknown>} prefix="  " /></li>
+        ) : (
+          <li key={k}>{v === true ? "✅" : v === false ? "❌" : "•"} {prefix + k}{typeof v === "boolean" ? "" : `: ${String(v)}`}</li>
+        ),
+      )}
+    </ul>
   );
 }

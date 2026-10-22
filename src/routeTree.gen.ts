@@ -31,6 +31,7 @@ import { Route as ApiStoreAdminRouteImport } from './routes/api/store/admin'
 import { Route as ApiStoreCheckoutRouteImport } from './routes/api/store/checkout'
 import { Route as ApiStoreStatusRouteImport } from './routes/api/store/status'
 import { Route as ApiLicensesIdPdfRouteImport } from './routes/api/licenses.$id.pdf'
+import { Route as ApiStoreAdminHealthRouteImport } from './routes/api/store/admin/health'
 import { Route as ApiStoreCronJobRouteImport } from './routes/api/store/cron/$job'
 import { Route as ApiStoreOrderTokenRouteImport } from './routes/api/store/order/$token'
 import { Route as ApiStoreRpiWebhookRouteImport } from './routes/api/store/rpi/webhook'
@@ -151,6 +152,11 @@ const ApiLicensesIdPdfRoute = ApiLicensesIdPdfRouteImport.update({
   path: '/pdf',
   getParentRoute: () => ApiLicensesIdRoute,
 } as any)
+const ApiStoreAdminHealthRoute = ApiStoreAdminHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => ApiStoreAdminRoute,
+} as any)
 const ApiStoreCronJobRoute = ApiStoreCronJobRouteImport.update({
   id: '/api/store/cron/$job',
   path: '/api/store/cron/$job',
@@ -225,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/api/store/checkout': typeof ApiStoreCheckoutRoute
   '/api/store/status': typeof ApiStoreStatusRoute
   '/api/licenses/$id/pdf': typeof ApiLicensesIdPdfRoute
+  '/api/store/admin/health': typeof ApiStoreAdminHealthRoute
   '/api/store/cron/$job': typeof ApiStoreCronJobRoute
   '/api/store/order/$token': typeof ApiStoreOrderTokenRouteWithChildren
   '/api/store/rpi/webhook': typeof ApiStoreRpiWebhookRoute
@@ -258,6 +265,7 @@ export interface FileRoutesByTo {
   '/api/store/checkout': typeof ApiStoreCheckoutRoute
   '/api/store/status': typeof ApiStoreStatusRoute
   '/api/licenses/$id/pdf': typeof ApiLicensesIdPdfRoute
+  '/api/store/admin/health': typeof ApiStoreAdminHealthRoute
   '/api/store/cron/$job': typeof ApiStoreCronJobRoute
   '/api/store/order/$token': typeof ApiStoreOrderTokenRouteWithChildren
   '/api/store/rpi/webhook': typeof ApiStoreRpiWebhookRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/api/store/checkout': typeof ApiStoreCheckoutRoute
   '/api/store/status': typeof ApiStoreStatusRoute
   '/api/licenses/$id/pdf': typeof ApiLicensesIdPdfRoute
+  '/api/store/admin/health': typeof ApiStoreAdminHealthRoute
   '/api/store/cron/$job': typeof ApiStoreCronJobRoute
   '/api/store/order/$token': typeof ApiStoreOrderTokenRouteWithChildren
   '/api/store/rpi/webhook': typeof ApiStoreRpiWebhookRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/api/store/checkout'
     | '/api/store/status'
     | '/api/licenses/$id/pdf'
+    | '/api/store/admin/health'
     | '/api/store/cron/$job'
     | '/api/store/order/$token'
     | '/api/store/rpi/webhook'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/api/store/checkout'
     | '/api/store/status'
     | '/api/licenses/$id/pdf'
+    | '/api/store/admin/health'
     | '/api/store/cron/$job'
     | '/api/store/order/$token'
     | '/api/store/rpi/webhook'
@@ -393,6 +404,7 @@ export interface FileRouteTypes {
     | '/api/store/checkout'
     | '/api/store/status'
     | '/api/licenses/$id/pdf'
+    | '/api/store/admin/health'
     | '/api/store/cron/$job'
     | '/api/store/order/$token'
     | '/api/store/rpi/webhook'
@@ -587,6 +599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLicensesIdPdfRouteImport
       parentRoute: typeof ApiLicensesIdRoute
     }
+    '/api/store/admin/health': {
+      id: '/api/store/admin/health'
+      path: '/health'
+      fullPath: '/api/store/admin/health'
+      preLoaderRoute: typeof ApiStoreAdminHealthRouteImport
+      parentRoute: typeof ApiStoreAdminRoute
+    }
     '/api/store/cron/$job': {
       id: '/api/store/cron/$job'
       path: '/api/store/cron/$job'
@@ -678,10 +697,12 @@ const ApiLicensesRouteWithChildren = ApiLicensesRoute._addFileChildren(
 )
 
 interface ApiStoreAdminRouteChildren {
+  ApiStoreAdminHealthRoute: typeof ApiStoreAdminHealthRoute
   ApiStoreAdminPhotosPhotoIdRoute: typeof ApiStoreAdminPhotosPhotoIdRoute
 }
 
 const ApiStoreAdminRouteChildren: ApiStoreAdminRouteChildren = {
+  ApiStoreAdminHealthRoute: ApiStoreAdminHealthRoute,
   ApiStoreAdminPhotosPhotoIdRoute: ApiStoreAdminPhotosPhotoIdRoute,
 }
 

@@ -1,7 +1,7 @@
 import type { StoreDeps } from "./types.ts";
 import { sha256Hex } from "./ids.ts";
 import { applyRpiStatus } from "./rpi.ts";
-import { audit } from "./state.ts";
+import { audit, canTransition, transition } from "./state.ts";
 import { sendAlert, type OrderRow } from "./emails.ts";
 import { getSetting, setSetting } from "./settings.ts";
 
@@ -36,6 +36,15 @@ export async function handleRpiWebhook(deps: StoreDeps, raw: string, orderToken:
   await audit(deps.db, order.id, "rpi", `webhook ${source}`);
   if (source === "PaymentFailure") await sendAlert(deps, "RPI card payment failed", `RPI could not charge your card for order ${order.id.slice(0, 8)}. RPI retries the next day.`);
   if (source === "OrderReprintRequested") return "noted";
+  // RPI order-limit queue (parity with the emoji store).
+  if (source === "OrderOverLimitQueued") {
+    await sendAlert(deps, "RPI limit queue", `Order ${order.id.slice(0, 8)} is waiting in RPI's order-limit queue.`);
+  }
+  if (source === "OrderExceedsLimitQueue") {
+    await sendAlert(deps, "RPI rejected an order: limit queue full", `Order ${order.id.slice(0, 8)} was not accepted by RPI (limit queue full). Not resubmitted.`);
+    if (canTransition(order.state as Parameters<typeof canTransition>[0], "NEEDS_ATTENTION", "rpi")) await transition(deps.db, order.id, "NEEDS_ATTENTION", "rpi", "OrderExceedsLimitQueue");
+    return "needs_attention";
+  }
   if (!order.customer_order_id) return "no_rpi_id";
   const g = await deps.rpi.get(order.customer_order_id);
   if (g.kind !== "ok") return "get_failed (reconcile will catch up)";

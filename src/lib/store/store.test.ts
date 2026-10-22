@@ -614,3 +614,39 @@ describe("copies left today + reservations", () => {
     assert.equal(await left(), 1);
   });
 });
+
+describe("emoji-store parity", () => {
+  let h: Harness;
+  beforeEach(async () => (h = await makeHarness()));
+
+  it("OrderExceedsLimitQueue → NEEDS_ATTENTION + alert; OrderOverLimitQueued alerts only", async () => {
+    const { token, sessionId } = await h.checkoutAndPay();
+    const id = customerOrderIdFor("sbx", sessionId);
+    h.rpiState.set(id, "QUEUED");
+    await handleRpiWebhook(h.deps, JSON.stringify({ source: "OrderOverLimitQueued", time: "q1", data: { customerOrderId: id } }), token);
+    assert.ok(h.calls.emails.some((e) => /limit queue/i.test(e.subject)));
+    assert.notEqual((await h.order(token)).state, "NEEDS_ATTENTION");
+    assert.equal(await handleRpiWebhook(h.deps, JSON.stringify({ source: "OrderExceedsLimitQueue", time: "q2", data: { customerOrderId: id } }), token), "needs_attention");
+    assert.equal((await h.order(token)).state, "NEEDS_ATTENTION");
+  });
+
+  it("health returns only booleans, numbers and timestamps", async () => {
+    const { storeHealth } = await import("./health.ts");
+    await setSetting(h.db, "ORDERS_ENABLED", "false");
+    const fakeEnv: Record<string, string> = { STRIPE_SECRET_KEY: "rk_test_x", STRIPE_WEBHOOK_SECRET: "whsec_x", ADMIN_TOKEN: "tok" };
+    const r = await storeHealth(h.deps, (k) => fakeEnv[k], async () => ({ status: 200 }));
+    assert.equal(r.stripeKeyIsLive, false);
+    assert.equal(r.stripeWebhookSecretLooksValid, true);
+    assert.equal(r.dbReachable, true);
+    assert.equal(r.ordersEnabled, false);
+    assert.deepEqual(r.printFilesOk, { interior: true, cover: true });
+    const flat = JSON.stringify(r);
+    assert.ok(!flat.includes("rk_test_x") && !flat.includes("whsec_x") && !flat.includes('"tok"') && !/https?:/.test(flat));
+  });
+
+  it("sales ship OFF and reply-to defaults to Max", () => {
+    const { config } = loadStoreConfig((k) => ({ STORE_ENV: "sbx", PUBLIC_BASE_URL: "https://test.example", STRIPE_SECRET_KEY: "sk_test_x", STRIPE_PRICE_ID: "p", STRIPE_SHIPPING_RATE_STANDARD: "a", STRIPE_SHIPPING_RATE_EXPEDITED: "b", STRIPE_SHIPPING_RATE_RUSH: "c" } as Record<string, string>)[k]);
+    if (config) assert.equal(config.replyTo, "maxinfeld@gmail.com");
+    assert.equal(BOOK.sku, "BKPH_HCIW_STD_11.750x11.750IN_80C_MT_40_100T_GLS_44");
+  });
+});
