@@ -236,12 +236,12 @@ describe("checkout + Stripe webhook -> RPI", () => {
   beforeEach(async () => (h = await makeHarness()));
 
   it("creates a Checkout Session with the plan's settings", async () => {
-    await createCheckout(h.deps);
+    await createCheckout(h.deps, "expedited");
     const p = h.calls.sessions[0];
     assert.equal(p.mode, "payment");
     assert.deepEqual(p.line_items, [{ price: "price_250", quantity: 1 }]);
     assert.deepEqual(p.shipping_address_collection, { allowed_countries: ["US"] });
-    assert.equal(p.shipping_options.length, 3);
+    assert.deepEqual(p.shipping_options, [{ shipping_rate: "shr_exp" }]);
     assert.equal(p.automatic_tax.enabled, true);
     assert.equal(p.consent_collection.terms_of_service, "required");
     assert.match(p.custom_text.terms_of_service_acceptance.message, /test-copy\.example\/terms/);

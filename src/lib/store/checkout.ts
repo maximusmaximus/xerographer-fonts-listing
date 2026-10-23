@@ -20,11 +20,11 @@ export function shipMethodForRate(deps: StoreDeps, rateId: string | null | undef
   return (Object.keys(r) as ShipMethod[]).find((k) => r[k] === rateId);
 }
 
-export async function createCheckout(deps: StoreDeps): Promise<{ status: number; body: Record<string, unknown> }> {
+export async function createCheckout(deps: StoreDeps, ship: ShipMethod = "standard"): Promise<{ status: number; body: Record<string, unknown> }> {
   const guard = await storeGuard(deps.db);
   if (!guard.open) return { status: 503, body: { error: "temporarily unavailable" } };
   const token = randomToken();
-  await deps.db.query("insert into store_orders (id, env, state) values ($1, $2, 'CHECKOUT_OPEN')", [token, deps.config.env]);
+  await deps.db.query("insert into store_orders (id, env, state, ship_method) values ($1, $2, 'CHECKOUT_OPEN', $3)", [token, deps.config.env, ship]);
   const now = await deps.now();
   if ((await reserveCopy(deps.db, token, now)) === null) {
     await deps.db.query("update store_orders set state = 'EXPIRED', last_error = 'edition sold out' where id = $1", [token]);
@@ -43,11 +43,7 @@ export async function createCheckout(deps: StoreDeps): Promise<{ status: number;
       mode: "payment",
       line_items: [{ price: deps.config.stripePriceId, quantity: 1 }],
       shipping_address_collection: { allowed_countries: ["US"] },
-      shipping_options: [
-        { shipping_rate: deps.config.shippingRates.standard },
-        { shipping_rate: deps.config.shippingRates.expedited },
-        { shipping_rate: deps.config.shippingRates.rush },
-      ],
+      shipping_options: [{ shipping_rate: deps.config.shippingRates[ship] }],
       automatic_tax: { enabled: true },
       phone_number_collection: { enabled: true },
       consent_collection: { terms_of_service: "required" },

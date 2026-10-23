@@ -14,10 +14,10 @@ export const Route = createFileRoute("/book")({
 });
 
 const SHIPPING = [
-  { name: "Standard", price: "$6.99", time: "Prints in ~4 business days, then 2–5 days" },
-  { name: "Expedited", price: "$30.99", time: "Prints in ~4 business days, then 2 days" },
-  { name: "Rush", price: "$35.99", time: "Prints in ~3 business days, then 1 day" },
-];
+  { id: "standard", name: "Standard", price: "$6.99", time: "Prints in ~4 business days, then 2–5 days" },
+  { id: "expedited", name: "Expedited", price: "$30.99", time: "Prints in ~4 business days, then 2 days" },
+  { id: "rush", name: "Rush", price: "$35.99", time: "Prints in ~3 business days, then 1 day" },
+] as const;
 
 function BookPage() {
   const product = (Route.useLoaderData() ?? BOOK_PRODUCT_DEFAULTS) as BookProduct;
@@ -25,6 +25,7 @@ function BookPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [soldOutNow, setSoldOutNow] = useState(false);
+  const [ship, setShip] = useState<(typeof SHIPPING)[number]["id"]>("standard");
   const open = !product.listed ? false : status ? status.enabled && status.open : null;
   const [editionGone, setEditionGone] = useState(false);
   const editionSoldOut = editionGone || status?.editionSoldOut === true;
@@ -34,7 +35,11 @@ function BookPage() {
     setBusy(true);
     setError(null);
     try {
-      const r = await fetch("/api/store/checkout", { method: "POST" });
+      const r = await fetch("/api/store/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ship }),
+      });
       const d = (await r.json().catch(() => ({}))) as { url?: string; error?: string };
       if (r.ok && d.url) {
         window.location.assign(d.url);
@@ -70,17 +75,31 @@ function BookPage() {
           <span className="font-display text-4xl">{product.priceLabel}</span>
           <span className="text-fg-muted">{product.priceNote}</span>
         </div>
-        <table className="mt-6 w-full text-sm">
-          <tbody>
+        <fieldset className="mt-6">
+          <legend className="text-sm font-medium">Shipping</legend>
+          <div className="mt-2 space-y-2">
             {SHIPPING.map((s) => (
-              <tr key={s.name} className="border-t border-border">
-                <td className="py-2 pr-3 font-medium">{s.name}</td>
-                <td className="py-2 pr-3 font-mono tabular-nums">{s.price}</td>
-                <td className="py-2 text-fg-muted">{s.time}</td>
-              </tr>
+              <label
+                key={s.id}
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${ship === s.id ? "border-fg" : "border-border"}`}
+              >
+                <input
+                  type="radio"
+                  name="ship"
+                  value={s.id}
+                  checked={ship === s.id}
+                  onChange={() => setShip(s.id)}
+                  className="mt-1"
+                />
+                <span className="min-w-0">
+                  <span className="font-medium">{s.name}</span>
+                  <span className="ml-2 font-mono tabular-nums">{s.price}</span>
+                  <span className="mt-0.5 block text-sm text-fg-muted">{s.time}</span>
+                </span>
+              </label>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </fieldset>
         <p className="mt-3 text-sm text-fg-muted">Ships to the continental US (including DC) only.</p>
         <div className="mt-6 rounded-lg border border-border p-4 text-sm">
           Printed to order. Cancel for a full refund until 4:00 PM Pacific on the day you order (orders after 4:00 PM
