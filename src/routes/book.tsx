@@ -71,8 +71,35 @@ function BookPage() {
         <div>
         <p className="text-xs uppercase tracking-[0.22em] text-fg-muted">The book</p>
         <h1 className="mt-3 font-display text-4xl sm:text-5xl">{product.title}</h1>
-        <p className="mt-4 text-fg-muted">{product.specs}</p>
-        <p className="mt-6 text-lg">{product.description}</p>
+        <div className="mt-6 space-y-6 text-sm leading-relaxed sm:text-base">
+          <p>
+            The Xerographer Specimen Ledger is the whole Xerographer Fonts library in one book: all 1,376 typefaces
+            across 530 full-color pages, printed on heavy 100# gloss and bound in an 11.75-inch square hardcover with a
+            printed wraparound cover.
+          </p>
+          <div>
+            <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">Inside</h2>
+            <p className="mt-2">
+              Organized into 23 families, from Script, Brush and Calligraphy to Grunge, Techno, Graffiti, Stencil,
+              Western and Foreign Look. Each family opens with its own full-page collage.
+            </p>
+            <p className="mt-2">
+              Every face is set large and filled edge to edge with real words, so you see how it actually behaves on a
+              page. Fonts with many styles get a full spread of their own. It closes with a set of original art pages.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-xs uppercase tracking-[0.18em] text-fg-muted">A working index</h2>
+            <p className="mt-2">
+              Each specimen has a QR code that takes you straight to that font online, so the printed book doubles as a
+              working index to the collection.
+            </p>
+          </div>
+          <p>
+            A numbered limited edition of only 500 copies: part reference book, part art object, and the most complete
+            record this type library will ever have in print.
+          </p>
+        </div>
         <div className="mt-8 flex flex-wrap items-baseline gap-3">
           <span className="font-display text-4xl">{product.priceLabel}</span>
           <span className="text-fg-muted">{product.priceNote}</span>
