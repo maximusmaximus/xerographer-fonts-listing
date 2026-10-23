@@ -75,14 +75,11 @@ export function ThemeToggle() {
 
 function BookTab() {
   return (
-    <Link
-      to="/book"
-      data-book-tab
-      className="inline-flex h-11 items-center whitespace-nowrap rounded px-1.5 text-xs text-fg-muted transition-colors hover:text-fg sm:px-3 sm:text-sm"
-      activeProps={{ className: "text-fg" }}
-    >
-      Specimen Book
-    </Link>
+    <Button asChild variant="primary" size="sm" className="ml-0.5 shrink-0 px-2.5 text-xs sm:ml-1 sm:px-3 sm:text-sm">
+      <Link to="/book" data-book-tab>
+        Specimen Book
+      </Link>
+    </Button>
   );
 }
 
