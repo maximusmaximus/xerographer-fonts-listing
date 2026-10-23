@@ -9,6 +9,8 @@ import {
   APP_ENV_REL_PATH,
   mergeAppEnv,
   parseAppEnv,
+  parseDevSecrets,
+  fillEmptyEnv,
   projectRoot,
   readAppEnv,
 } from "./with-app-env.mjs";
@@ -32,6 +34,16 @@ test("keeps VITE_-prefixed string entries", () => {
   });
 });
 
+test("dev secrets ignore VITE_ names and do not override a set value", () => {
+  assert.deepEqual(
+    parseDevSecrets("# note\nSTRIPE_WEBHOOK_SECRET=whsec_example\nVITE_AUTH_ENABLED=false\n\n"),
+    { STRIPE_WEBHOOK_SECRET: "whsec_example" },
+  );
+  assert.deepEqual(
+    fillEmptyEnv({ STRIPE_WEBHOOK_SECRET: "already" }, { STRIPE_WEBHOOK_SECRET: "other", CRON_SECRET: "x" }),
+    { STRIPE_WEBHOOK_SECRET: "already", CRON_SECRET: "x" },
+  );
+});
 test("drops non-VITE keys, non-string values and malformed documents", () => {
   assert.deepEqual(parseAppEnv('{"DATABASE_URL":"postgres://x","VITE_N":1,"VITE_OK":"y"}'), {
     VITE_OK: "y",

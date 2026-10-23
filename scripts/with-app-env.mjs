@@ -66,6 +66,50 @@ export function mergeAppEnv(appEnv, processEnv) {
 }
 
 /**
+ * `.secrets/dev.env` lines: KEY=VALUE. Server-only. `VITE_` names are ignored
+ * so a secret in this file can never be handed to the browser. Blank lines
+ * and `#` comments are ignored.
+ */
+export function parseDevSecrets(text) {
+  const env = {};
+  for (const line of String(text).split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (!/^[A-Z][A-Z0-9_]*$/.test(key) || key.startsWith("VITE_")) continue;
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (value) env[key] = value;
+  }
+  return env;
+}
+
+/** Dev secrets under `root`, or `{}` when the file is absent. */
+export function readDevSecrets(root) {
+  try {
+    return parseDevSecrets(readFileSync(join(root, ".secrets/dev.env"), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+/** Fill only keys that are missing or blank. An existing value always wins. */
+export function fillEmptyEnv(base, extra) {
+  const out = { ...base };
+  for (const [key, value] of Object.entries(extra)) {
+    if (typeof out[key] !== "string" || !out[key].trim()) out[key] = value;
+  }
+  return out;
+}
+
+/**
  * Translate a child's `exit` `(code, signal)` into this process's exit status.
  *
  * Do not re-raise the signal with `process.kill(process.pid, signal)`: under
@@ -110,7 +154,10 @@ function main(argv) {
     console.error("usage: node scripts/with-app-env.mjs <command> [args…]");
     process.exit(2);
   }
-  const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
+  const env = fillEmptyEnv(
+    mergeAppEnv(readAppEnv(projectRoot()), process.env),
+    readDevSecrets(projectRoot()),
+  );
   const child = spawn(command, args, { stdio: "inherit", env });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
