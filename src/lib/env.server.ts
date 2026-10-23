@@ -6,10 +6,16 @@
  * host. Never hard-code a value, never prefix a secret with VITE_, and never
  * unset or overwrite an existing production variable during an update.
  * Names only: .env.example.
+ *
+ * If the host did not set a name, the dev file `.secrets/dev.env` fills it.
+ * That file is gitignored. A non-empty host value always wins.
  */
+import { devSecret } from "./dev-secrets.server";
+
 export function env(key: string): string | undefined {
   const v = process.env[key]?.trim();
-  return v || undefined;
+  if (v) return v;
+  return devSecret(key);
 }
 
 /**
