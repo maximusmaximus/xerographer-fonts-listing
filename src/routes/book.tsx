@@ -5,6 +5,7 @@ import { PageShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { BookPreview } from "@/components/book-preview";
 import { BOOK_PRODUCT_DEFAULTS, type BookProduct } from "@/lib/product";
+import { EDITION_FOR_SALE, EDITION_SIZE } from "@/lib/store/edition";
 import { loadBookProduct } from "@/lib/book-product";
 
 export const Route = createFileRoute("/book")({
@@ -29,6 +30,7 @@ function BookPage() {
   const open = !product.listed ? false : status ? status.enabled && status.open : null;
   const [editionGone, setEditionGone] = useState(false);
   const editionSoldOut = editionGone || status?.editionSoldOut === true;
+  const remaining = typeof status?.editionLeft === "number" ? status.editionLeft : EDITION_FOR_SALE;
   const soldOut = editionSoldOut || soldOutNow || (status?.enabled === true && status.copiesLeft === 0);
 
   async function buy() {
@@ -107,8 +109,8 @@ function BookPage() {
           shipping damage are replaced free. <Link to="/terms" className="underline">Terms of Sale</Link>
         </div>
         <p className="mt-6 text-sm uppercase tracking-[0.18em]" data-testid="edition">
-          Limited edition of 500
-          {typeof status?.editionLeft === "number" && ` · ${editionSoldOut ? "sold out" : `${status.editionLeft} of 500 copies remaining`}`}
+          Limited edition of {EDITION_SIZE}
+          {` · ${editionSoldOut ? "sold out" : `${remaining} of ${EDITION_SIZE} copies remaining`}`}
         </p>
         <div className="mt-8">
           {open === false ? (

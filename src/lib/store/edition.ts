@@ -7,6 +7,8 @@ import type { Db } from "./types.ts";
 import { RESERVATION_MS } from "./slots.ts";
 
 export const EDITION_SIZE = 500;
+/** Copies still for sale on the site. The rest of the 500 were already claimed. */
+export const EDITION_FOR_SALE = 421;
 
 async function dropExpired(db: Db, now: Date) {
   await db.query(
@@ -22,7 +24,13 @@ export async function editionStatus(db: Db, now: Date) {
     "select count(*) filter (where expires_at is null)::int as sold, count(*) filter (where expires_at is not null)::int as held from store_edition_copies",
   );
   const taken = r.sold + r.held;
-  return { size: EDITION_SIZE, sold: r.sold, reserved: r.held, left: Math.max(0, EDITION_SIZE - taken), soldOut: taken >= EDITION_SIZE };
+  return {
+    size: EDITION_SIZE,
+    sold: r.sold,
+    reserved: r.held,
+    left: Math.max(0, EDITION_FOR_SALE - taken),
+    soldOut: taken >= EDITION_FOR_SALE,
+  };
 }
 
 /** Lowest free copy number for `orderId`, or null when all 500 are taken. */
@@ -35,11 +43,11 @@ export async function reserveCopy(db: Db, orderId: string, now: Date): Promise<n
        where not exists (select 1 from store_edition_copies c where c.copy_no = s)
        order by s limit 1
        on conflict do nothing returning copy_no`,
-      [orderId, new Date(now.getTime() + RESERVATION_MS).toISOString(), EDITION_SIZE],
+      [orderId, new Date(now.getTime() + RESERVATION_MS).toISOString(), EDITION_FOR_SALE],
     );
     if (rows.length) return rows[0].copy_no;
     const [{ n }] = await db.query<{ n: number }>("select count(*)::int as n from store_edition_copies");
-    if (n >= EDITION_SIZE) return null;
+    if (n >= EDITION_FOR_SALE) return null;
   }
   return null;
 }

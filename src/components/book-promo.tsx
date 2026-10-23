@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   PROMO_PAGES, PROMO_SESSION_KEY, PROMO_STORAGE_KEY, promoSrc, shouldShowPromo, swipeDirection, wrapIndex,
 } from "@/lib/book-promo";
+import { EDITION_FOR_SALE, EDITION_SIZE } from "@/lib/store/edition";
 import { fetchStoreStatus } from "@/lib/store-status";
 
 function store(kind: "local" | "session") {
@@ -223,7 +224,7 @@ export function BookPromo() {
               <span className="text-xs text-fg-muted">plus shipping and sales tax</span>
             </p>
             <p className="mt-0.5 text-[13px] font-medium sm:mt-2 sm:text-sm" data-testid="promo-edition">
-              Limited edition: only 500 copies{left !== null ? ` · ${left} remaining` : ""}
+              Limited edition: {left ?? EDITION_FOR_SALE} of {EDITION_SIZE} copies left
             </p>
             <p className="mt-1 text-[13px] leading-snug text-fg-muted sm:mt-3 sm:text-sm" data-testid="promo-intro">
               Swipe through ten sample pages, from the cover to the closing art.

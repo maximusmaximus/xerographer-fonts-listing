@@ -25,7 +25,7 @@ import { createReprintRequest, readPhoto, sniffImage, uploadClaimPhoto, purgePho
 import { resendMailer } from "./emails.ts";
 import { checkAdmin, adminAction } from "./admin.ts";
 import { copiesLeft, dailyCopyCap, reserveSlot } from "./slots.ts";
-import { EDITION_SIZE, editionStatus, reserveCopy } from "./edition.ts";
+import { EDITION_FOR_SALE, editionStatus, reserveCopy } from "./edition.ts";
 
 const root = new URL("../../../", import.meta.url);
 
@@ -677,11 +677,11 @@ describe("limited edition of 500 + 50/day + $250", () => {
     const second = await h.checkoutAndPay();
     assert.equal((await h.order(second.token)).edition_number, 2);
     const st = await editionStatus(h.db, h.clock.now);
-    assert.deepEqual([st.sold, st.left, st.soldOut], [2, 498, false]);
+    assert.deepEqual([st.sold, st.left, st.soldOut], [2, EDITION_FOR_SALE - 2, false]);
   });
 
   it("sold out at 500: checkout refused before Stripe is called", async () => {
-    await fill(EDITION_SIZE);
+    await fill(EDITION_FOR_SALE);
     const before = h.calls.sessions.length;
     const r = await createCheckout(h.deps);
     assert.equal(r.status, 409);
@@ -691,7 +691,7 @@ describe("limited edition of 500 + 50/day + $250", () => {
   });
 
   it("expired, cancelled and refunded orders release their copy", async () => {
-    await fill(EDITION_SIZE - 1);
+    await fill(EDITION_FOR_SALE - 1);
     await createCheckout(h.deps);
     const token = h.calls.sessions.at(-1).metadata.order_token;
     assert.equal((await editionStatus(h.db, h.clock.now)).left, 0);
@@ -699,7 +699,7 @@ describe("limited edition of 500 + 50/day + $250", () => {
     assert.equal((await h.order(token)).state, "EXPIRED");
     assert.equal((await editionStatus(h.db, h.clock.now)).left, 1);
     const paid = await h.checkoutAndPay();
-    assert.equal((await h.order(paid.token)).edition_number, EDITION_SIZE);
+    assert.equal((await h.order(paid.token)).edition_number, EDITION_FOR_SALE);
     assert.equal((await editionStatus(h.db, h.clock.now)).soldOut, true);
     await requestCancel(h.deps, await h.order(paid.token), "customer");
     assert.equal((await h.order(paid.token)).state, "CANCELLED_REFUNDED");
@@ -707,22 +707,22 @@ describe("limited edition of 500 + 50/day + $250", () => {
   });
 
   it("stale reservations past their expiry free up", async () => {
-    await fill(EDITION_SIZE, false);
+    await fill(EDITION_FOR_SALE, false);
     assert.equal((await editionStatus(h.db, h.clock.now)).left, 0);
     h.clock.now = new Date(h.clock.now.getTime() + 2 * 60_000);
-    assert.equal((await editionStatus(h.db, h.clock.now)).left, EDITION_SIZE);
+    assert.equal((await editionStatus(h.db, h.clock.now)).left, EDITION_FOR_SALE);
   });
 
   it("race for the last copies: never more than 500 taken, distinct numbers", async () => {
-    await fill(EDITION_SIZE - 3);
+    await fill(EDITION_FOR_SALE - 3);
     const ids = Array.from({ length: 12 }, (_, i) => `race${i}`);
     for (const id of ids) await h.db.query("insert into store_orders (id, env, state) values ($1, 'sbx', 'CHECKOUT_OPEN')", [id]);
     const got = await Promise.all(ids.map((id) => reserveCopy(h.db, id, h.clock.now)));
     const won = got.filter((n): n is number => n !== null);
     assert.equal(won.length, 3);
-    assert.deepEqual([...won].sort((a, b) => a - b), [498, 499, 500]);
+    assert.deepEqual([...won].sort((a, b) => a - b), [EDITION_FOR_SALE - 2, EDITION_FOR_SALE - 1, EDITION_FOR_SALE]);
     const [{ n }] = await h.db.query<{ n: number }>("select count(*)::int as n from store_edition_copies");
-    assert.equal(n, EDITION_SIZE);
+    assert.equal(n, EDITION_FOR_SALE);
   });
 
   it("daily cap of 50 per PT day", async () => {
