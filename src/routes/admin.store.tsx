@@ -33,11 +33,12 @@ function AdminStore() {
   useEffect(() => setToken(sessionStorage.getItem(KEY) ?? ""), []);
 
   const load = useCallback(async () => {
-    if (!token) return;
-    const r = await fetch("/api/store/admin", { headers: { "x-admin-token": token } });
+    const headers: Record<string, string> = {};
+    if (token) headers["x-admin-token"] = token;
+    const r = await fetch("/api/store/admin", { headers });
     if (r.status === 401) {
       setData(null);
-      setMsg("Wrong admin token.");
+      if (token) setMsg("Wrong admin token.");
       return;
     }
     if (!r.ok) {
@@ -45,7 +46,7 @@ function AdminStore() {
       return;
     }
     setData((await r.json()) as Summary);
-    const h = await fetch("/api/store/admin/health", { headers: { "x-admin-token": token } });
+    const h = await fetch("/api/store/admin/health", { headers });
     setHealth(h.ok ? ((await h.json()) as Record<string, unknown>) : null);
   }, [token]);
   useEffect(() => void load(), [load]);
@@ -90,7 +91,7 @@ function AdminStore() {
       <h1 className="text-2xl">Store admin ({data.env})</h1>
       <section className="flex flex-wrap items-center gap-3">
         <span>Orders enabled: <strong>{String(data.ordersEnabled)}</strong></span>
-        <Button size="sm" onClick={() => act("set-enabled", { value: String(!data.ordersEnabled) })}>
+        <Button type="button" size="sm" onClick={() => act("set-enabled", { value: String(!data.ordersEnabled) })}>
           {data.ordersEnabled ? "Turn orders OFF" : "Turn orders ON"}
         </Button>
         <span>Today: {data.cap.count} sent, ~${data.cap.exposure}</span>

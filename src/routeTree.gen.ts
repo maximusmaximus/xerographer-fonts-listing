@@ -16,6 +16,7 @@ import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as DotwellKnownMcpDotjsonRouteImport } from './routes/[.]well-known/mcp[.]json'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminStoreRouteImport } from './routes/admin.store'
 import { Route as ApiFontsRouteImport } from './routes/api/fonts'
 import { Route as ApiLicensesRouteImport } from './routes/api/licenses'
@@ -26,6 +27,7 @@ import { Route as FontSlugRouteImport } from './routes/font.$slug'
 import { Route as LicenseIdRouteImport } from './routes/license.$id'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
 import { Route as ApiAdminLoginRouteImport } from './routes/api/admin/login'
+import { Route as ApiAdminOrdersRouteImport } from './routes/api/admin/orders'
 import { Route as ApiAdminProductRouteImport } from './routes/api/admin/product'
 import { Route as ApiFontFileSlugRouteImport } from './routes/api/font-file.$slug'
 import { Route as ApiLicensesIdRouteImport } from './routes/api/licenses.$id'
@@ -80,6 +82,11 @@ const DotwellKnownMcpDotjsonRoute = DotwellKnownMcpDotjsonRouteImport.update({
   path: '/.well-known/mcp.json',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminStoreRoute = AdminStoreRouteImport.update({
   id: '/store',
   path: '/store',
@@ -128,6 +135,11 @@ const OrderTokenRoute = OrderTokenRouteImport.update({
 const ApiAdminLoginRoute = ApiAdminLoginRouteImport.update({
   id: '/api/admin/login',
   path: '/api/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminOrdersRoute = ApiAdminOrdersRouteImport.update({
+  id: '/api/admin/orders',
+  path: '/api/admin/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminProductRoute = ApiAdminProductRouteImport.update({
@@ -243,7 +255,9 @@ export interface FileRoutesByFullPath {
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
   '/order/$token': typeof OrderTokenRoute
+  '/admin/': typeof AdminIndexRoute
   '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/orders': typeof ApiAdminOrdersRoute
   '/api/admin/product': typeof ApiAdminProductRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
   '/api/licenses/$id': typeof ApiLicensesIdRouteWithChildren
@@ -266,7 +280,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/admin': typeof AdminRouteWithChildren
   '/agents': typeof AgentsRoute
   '/book': typeof BookRoute
   '/terms': typeof TermsRoute
@@ -280,7 +293,9 @@ export interface FileRoutesByTo {
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
   '/order/$token': typeof OrderTokenRoute
+  '/admin': typeof AdminIndexRoute
   '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/orders': typeof ApiAdminOrdersRoute
   '/api/admin/product': typeof ApiAdminProductRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
   '/api/licenses/$id': typeof ApiLicensesIdRouteWithChildren
@@ -318,7 +333,9 @@ export interface FileRoutesById {
   '/font/$slug': typeof FontSlugRoute
   '/license/$id': typeof LicenseIdRoute
   '/order/$token': typeof OrderTokenRoute
+  '/admin/': typeof AdminIndexRoute
   '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/orders': typeof ApiAdminOrdersRoute
   '/api/admin/product': typeof ApiAdminProductRoute
   '/api/font-file/$slug': typeof ApiFontFileSlugRoute
   '/api/licenses/$id': typeof ApiLicensesIdRouteWithChildren
@@ -357,7 +374,9 @@ export interface FileRouteTypes {
     | '/font/$slug'
     | '/license/$id'
     | '/order/$token'
+    | '/admin/'
     | '/api/admin/login'
+    | '/api/admin/orders'
     | '/api/admin/product'
     | '/api/font-file/$slug'
     | '/api/licenses/$id'
@@ -380,7 +399,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
-    | '/admin'
     | '/agents'
     | '/book'
     | '/terms'
@@ -394,7 +412,9 @@ export interface FileRouteTypes {
     | '/font/$slug'
     | '/license/$id'
     | '/order/$token'
+    | '/admin'
     | '/api/admin/login'
+    | '/api/admin/orders'
     | '/api/admin/product'
     | '/api/font-file/$slug'
     | '/api/licenses/$id'
@@ -431,7 +451,9 @@ export interface FileRouteTypes {
     | '/font/$slug'
     | '/license/$id'
     | '/order/$token'
+    | '/admin/'
     | '/api/admin/login'
+    | '/api/admin/orders'
     | '/api/admin/product'
     | '/api/font-file/$slug'
     | '/api/licenses/$id'
@@ -469,6 +491,7 @@ export interface RootRouteChildren {
   LicenseIdRoute: typeof LicenseIdRoute
   OrderTokenRoute: typeof OrderTokenRoute
   ApiAdminLoginRoute: typeof ApiAdminLoginRoute
+  ApiAdminOrdersRoute: typeof ApiAdminOrdersRoute
   ApiAdminProductRoute: typeof ApiAdminProductRoute
   ApiFontFileSlugRoute: typeof ApiFontFileSlugRoute
   ApiPreviewImageSlugRoute: typeof ApiPreviewImageSlugRoute
@@ -531,6 +554,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/.well-known/mcp.json'
       preLoaderRoute: typeof DotwellKnownMcpDotjsonRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/store': {
       id: '/admin/store'
@@ -600,6 +630,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin/login'
       fullPath: '/api/admin/login'
       preLoaderRoute: typeof ApiAdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/orders': {
+      id: '/api/admin/orders'
+      path: '/api/admin/orders'
+      fullPath: '/api/admin/orders'
+      preLoaderRoute: typeof ApiAdminOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/product': {
@@ -733,10 +770,12 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminStoreRoute: typeof AdminStoreRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminStoreRoute: AdminStoreRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -826,6 +865,7 @@ const rootRouteChildren: RootRouteChildren = {
   LicenseIdRoute: LicenseIdRoute,
   OrderTokenRoute: OrderTokenRoute,
   ApiAdminLoginRoute: ApiAdminLoginRoute,
+  ApiAdminOrdersRoute: ApiAdminOrdersRoute,
   ApiAdminProductRoute: ApiAdminProductRoute,
   ApiFontFileSlugRoute: ApiFontFileSlugRoute,
   ApiPreviewImageSlugRoute: ApiPreviewImageSlugRoute,
