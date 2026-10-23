@@ -74,9 +74,27 @@ export function ThemeToggle() {
 }
 
 function BookTab() {
+  const [family, setFamily] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadHeaderFace("crackvetica", "xf-crackvetica").then((ok) => {
+      if (ok) setFamily("xf-crackvetica");
+    });
+  }, []);
+
   return (
-    <Button asChild variant="primary" size="sm" className="ml-0.5 shrink-0 px-2.5 text-xs sm:ml-1 sm:px-3 sm:text-sm">
-      <Link to="/book" data-book-tab>
+    <Button
+      asChild
+      variant="primary"
+      size="sm"
+      className="ml-0.5 shrink-0 border-0 bg-[#ff2bd6] px-2.5 text-xs text-[#1a0414] hover:bg-[#ff4de0] hover:opacity-100 sm:ml-1 sm:px-3 sm:text-sm"
+    >
+      <Link
+        to="/book"
+        data-book-tab
+        className="whitespace-nowrap"
+        style={{ fontFamily: family ? `"${family}", var(--font-display)` : "var(--font-display)" }}
+      >
         Specimen Book
       </Link>
     </Button>
